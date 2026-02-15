@@ -669,22 +669,24 @@ function App() {
   const aspectRatioValue = ar.width / ar.height
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-[#0f1117] text-white">
       <div className="flex h-screen">
         {/* Left Sidebar - Controls */}
-        <div className={`w-80 bg-gray-800 p-4 overflow-y-auto border-r border-gray-700 shrink-0 ${isFullscreen ? 'hidden' : ''}`}>
-          <h1 className="text-xl font-bold mb-1">SVG ClipPath Creator</h1>
-          <p className="text-gray-400 text-xs mb-4">Create custom clip-path masks</p>
+        <div className={`w-80 bg-[#161922] p-5 overflow-y-auto border-r border-[#252a36] shrink-0 ${isFullscreen ? 'hidden' : ''}`}>
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-white">SVG ClipPath</h1>
+            <p className="text-slate-500 text-xs mt-1">Create stunning clip-path masks</p>
+          </div>
           
           {/* Shape Presets */}
-          <div className="mb-4">
-            <h2 className="text-sm font-semibold mb-2 text-gray-300">Shape Presets</h2>
-            <div className="grid grid-cols-2 gap-1">
+          <div className="mb-5">
+            <h2 className="text-xs font-semibold mb-3 text-slate-400 uppercase tracking-wider">Shape Presets</h2>
+            <div className="grid grid-cols-2 gap-2">
               {Object.entries(SHAPE_PRESETS).map(([key, preset]) => (
                 <button
                   key={key}
                   onClick={() => loadPreset(key)}
-                  className="px-2 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
+                  className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {preset.name}
                 </button>
@@ -693,21 +695,21 @@ function App() {
           </div>
 
           {/* Canvas Settings */}
-          <div className="mb-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
-            <h2 className="text-sm font-semibold mb-2 text-gray-300">Canvas Size</h2>
+          <div className="mb-5 p-4 bg-[#1c2029] rounded-xl border border-[#252a36]">
+            <h2 className="text-xs font-semibold mb-3 text-slate-400 uppercase tracking-wider">Canvas Size</h2>
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Aspect Ratio</label>
-                <div className="grid grid-cols-5 gap-1">
+                <label className="block text-xs text-slate-500 mb-2">Aspect Ratio</label>
+                <div className="grid grid-cols-5 gap-1.5">
                   {Object.keys(ASPECT_RATIOS).map((key) => (
                     <button
                       key={key}
                       onClick={() => setAspectRatio(key)}
-                      className={`px-1 py-1.5 rounded text-xs transition-colors ${
+                      className={`px-1.5 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                         aspectRatio === key 
                           ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-700 hover:bg-gray-600'
+                          : 'bg-[#252a36] hover:bg-[#2d333f] border border-[#333844]'
                       }`}
                     >
                       {key}
@@ -717,7 +719,7 @@ function App() {
               </div>
               
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Height: {canvasHeight}px</label>
+                <label className="block text-xs text-slate-500 mb-2">Height: <span className="text-slate-300">{canvasHeight}px</span></label>
                 <input
                   type="range"
                   min="300"
@@ -725,13 +727,13 @@ function App() {
                   step="50"
                   value={canvasHeight}
                   onChange={(e) => setCanvasHeight(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-1.5 bg-[#252a36] rounded-full appearance-none cursor-pointer accent-blue-500"
                 />
               </div>
               
               <button
                 onClick={toggleFullscreen}
-                className="w-full px-3 py-2 bg-indigo-600 hover:bg-indigo-500 rounded text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                className="w-full px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
@@ -742,42 +744,50 @@ function App() {
           </div>
 
           {/* Grid Settings */}
-          <div className="mb-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
-            <h2 className="text-sm font-semibold mb-2 text-gray-300">Grid Settings</h2>
+          <div className="mb-5 p-4 bg-[#1c2029] rounded-xl border border-[#252a36]">
+            <h2 className="text-xs font-semibold mb-3 text-slate-400 uppercase tracking-wider">Grid Settings</h2>
             
-            <div className="space-y-3">
-              <label className="flex items-center gap-2 text-xs cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={snapToGrid}
-                  onChange={(e) => setSnapToGrid(e.target.checked)}
-                  className="rounded bg-gray-700 border-gray-600 text-blue-500"
-                />
-                <span>Snap to Grid</span>
+            <div className="space-y-4">
+              <label className="flex items-center gap-3 text-xs cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={snapToGrid}
+                    onChange={(e) => setSnapToGrid(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-[#252a36] rounded-full peer-checked:bg-blue-600 transition-all duration-200"></div>
+                  <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 peer-checked:translate-x-4"></div>
+                </div>
+                <span className="text-slate-300 group-hover:text-white transition-colors">Snap to Grid</span>
               </label>
               
-              <label className="flex items-center gap-2 text-xs cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showGridPoints}
-                  onChange={(e) => setShowGridPoints(e.target.checked)}
-                  className="rounded bg-gray-700 border-gray-600 text-blue-500"
-                />
-                <span>Show Grid Points</span>
+              <label className="flex items-center gap-3 text-xs cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={showGridPoints}
+                    onChange={(e) => setShowGridPoints(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-[#252a36] rounded-full peer-checked:bg-blue-600 transition-all duration-200"></div>
+                  <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 peer-checked:translate-x-4"></div>
+                </div>
+                <span className="text-slate-300 group-hover:text-white transition-colors">Show Grid Points</span>
               </label>
               
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Grid Divisions: {gridSize}×{gridSize}</label>
-                <div className="flex items-center gap-2">
+                <label className="block text-xs text-slate-500 mb-2">Grid Divisions: <span className="text-slate-300">{gridSize}×{gridSize}</span></label>
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setGridSize(prev => Math.max(MIN_GRID, prev - 5))}
-                    className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-bold"
+                    className="px-2 py-1.5 bg-[#252a36] hover:bg-[#2d333f] border border-[#333844] rounded-lg text-xs font-bold transition-all"
                   >
                     −5
                   </button>
                   <button
                     onClick={() => setGridSize(prev => Math.max(MIN_GRID, prev - 1))}
-                    className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-bold"
+                    className="px-2 py-1.5 bg-[#252a36] hover:bg-[#2d333f] border border-[#333844] rounded-lg text-xs font-bold transition-all"
                   >
                     −
                   </button>
@@ -787,17 +797,17 @@ function App() {
                     max={MAX_GRID}
                     value={gridSize}
                     onChange={(e) => setGridSize(parseInt(e.target.value))}
-                    className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    className="flex-1 h-1.5 bg-[#252a36] rounded-full appearance-none cursor-pointer accent-blue-500"
                   />
                   <button
                     onClick={() => setGridSize(prev => Math.min(MAX_GRID, prev + 1))}
-                    className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-bold"
+                    className="px-2 py-1.5 bg-[#252a36] hover:bg-[#2d333f] border border-[#333844] rounded-lg text-xs font-bold transition-all"
                   >
                     +
                   </button>
                   <button
                     onClick={() => setGridSize(prev => Math.min(MAX_GRID, prev + 5))}
-                    className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-bold"
+                    className="px-2 py-1.5 bg-[#252a36] hover:bg-[#2d333f] border border-[#333844] rounded-lg text-xs font-bold transition-all"
                   >
                     +5
                   </button>
@@ -807,10 +817,10 @@ function App() {
           </div>
 
           {/* Add Points Mode */}
-          <div className="mb-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
-            <h2 className="text-sm font-semibold mb-2 text-gray-300">Point Tools</h2>
+          <div className="mb-5 p-4 bg-[#1c2029] rounded-xl border border-[#252a36]">
+            <h2 className="text-xs font-semibold mb-3 text-slate-400 uppercase tracking-wider">Point Tools</h2>
             
-            <div className="space-y-2">
+            <div className="space-y-3">
               <button
                 onClick={() => {
                   setAddMode(!addMode)
@@ -818,10 +828,10 @@ function App() {
                     setInsertAfterPoint(points[points.length - 1]?.id || null)
                   }
                 }}
-                className={`w-full px-3 py-2 rounded text-xs font-medium transition-colors ${
+                className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                   addMode 
-                    ? 'bg-green-600 hover:bg-green-500 text-white' 
-                    : 'bg-gray-700 hover:bg-gray-600'
+                    ? 'bg-emerald-600 text-white' 
+                    : 'bg-[#252a36] hover:bg-[#2d333f] border border-[#333844]'
                 }`}
               >
                 {addMode ? '✓ Add Mode ON' : '+ Enable Add Mode'}
@@ -829,40 +839,40 @@ function App() {
               
               {addMode && (
                 <>
-                  <div className="text-xs text-gray-400 mb-2">Insert Mode:</div>
-                  <div className="grid grid-cols-2 gap-1">
+                  <div className="text-xs text-slate-500 mb-2">Insert Mode:</div>
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setInsertMode('smart')}
-                      className={`px-2 py-1.5 rounded text-xs transition-colors ${
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                         insertMode === 'smart' 
-                          ? 'bg-green-600 text-white' 
-                          : 'bg-gray-700 hover:bg-gray-600'
+                          ? 'bg-emerald-600 text-white' 
+                          : 'bg-[#252a36] hover:bg-[#2d333f] border border-[#333844]'
                       }`}
                     >
                       🎯 Smart Edge
                     </button>
                     <button
                       onClick={() => setInsertMode('after')}
-                      className={`px-2 py-1.5 rounded text-xs transition-colors ${
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                         insertMode === 'after' 
-                          ? 'bg-green-600 text-white' 
-                          : 'bg-gray-700 hover:bg-gray-600'
+                          ? 'bg-emerald-600 text-white' 
+                          : 'bg-[#252a36] hover:bg-[#2d333f] border border-[#333844]'
                       }`}
                     >
                       ➡️ After Point
                     </button>
                   </div>
                   
-                  <div className="text-xs bg-green-900/30 p-2 rounded border border-green-800">
+                  <div className="text-xs bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20">
                     {insertMode === 'smart' ? (
                       <>
-                        <p className="font-medium text-green-400 mb-1">Smart Edge Mode</p>
-                        <p className="text-green-300">Click anywhere - point will be inserted on the nearest edge of the shape automatically!</p>
+                        <p className="font-semibold text-emerald-400 mb-1">Smart Edge Mode</p>
+                        <p className="text-emerald-300/80">Click anywhere - point will be inserted on the nearest edge of the shape automatically!</p>
                       </>
                     ) : (
                       <>
-                        <p className="font-medium text-green-400 mb-1">After Point Mode</p>
-                        <p className="text-green-300">Click a point first, then click canvas to insert after it.</p>
+                        <p className="font-semibold text-emerald-400 mb-1">After Point Mode</p>
+                        <p className="text-emerald-300/80">Click a point first, then click canvas to insert after it.</p>
                       </>
                     )}
                   </div>
@@ -872,22 +882,22 @@ function App() {
               <button
                 onClick={deletePoint}
                 disabled={!selectedPoint || points.length <= 3}
-                className="w-full px-3 py-2 bg-red-600/80 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed rounded text-xs font-medium transition-colors"
+                className="w-full px-4 py-2.5 bg-red-600 hover:bg-red-500 disabled:bg-[#252a36] disabled:text-slate-600 disabled:cursor-not-allowed rounded-xl text-xs font-semibold transition-all duration-200"
               >
                 Delete Selected Point
               </button>
 
               {selectedPoint && (
-                <div className="flex gap-1">
+                <div className="flex gap-2">
                   <button
                     onClick={() => movePointOrder('up')}
-                    className="flex-1 px-2 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+                    className="flex-1 px-3 py-2 bg-[#252a36] hover:bg-[#2d333f] border border-[#333844] rounded-lg text-xs font-medium transition-all"
                   >
                     ↑ Move Up
                   </button>
                   <button
                     onClick={() => movePointOrder('down')}
-                    className="flex-1 px-2 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+                    className="flex-1 px-3 py-2 bg-[#252a36] hover:bg-[#2d333f] border border-[#333844] rounded-lg text-xs font-medium transition-all"
                   >
                     ↓ Move Down
                   </button>
@@ -897,13 +907,13 @@ function App() {
           </div>
 
           {/* Corner Rounding */}
-          <div className="mb-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
-            <h2 className="text-sm font-semibold mb-2 text-gray-300">Corner Rounding</h2>
+          <div className="mb-5 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 backdrop-blur-sm">
+            <h2 className="text-xs font-semibold mb-3 text-slate-400 uppercase tracking-wider">Corner Rounding</h2>
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs text-gray-400 mb-1">
-                  Global Radius: {(globalRadius * 100).toFixed(0)}%
+                <label className="block text-xs text-slate-500 mb-2">
+                  Global Radius: <span className="text-amber-400 font-medium">{(globalRadius * 100).toFixed(0)}%</span>
                 </label>
                 <input
                   type="range"
@@ -912,20 +922,20 @@ function App() {
                   step="0.005"
                   value={globalRadius}
                   onChange={(e) => setGlobalRadius(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-amber-500"
                 />
               </div>
               
-              <div className="flex gap-1">
+              <div className="flex gap-2">
                 <button
                   onClick={applyGlobalRadius}
-                  className="flex-1 px-2 py-1.5 bg-amber-600 hover:bg-amber-500 rounded text-xs font-medium transition-colors"
+                  className="flex-1 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 rounded-lg text-xs font-semibold transition-all duration-200 shadow-lg shadow-amber-500/20"
                 >
                   Apply to All
                 </button>
                 <button
                   onClick={resetAllRadii}
-                  className="flex-1 px-2 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors"
+                  className="flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-medium transition-all"
                 >
                   Reset All
                 </button>
@@ -935,15 +945,15 @@ function App() {
 
           {/* Selected Point Properties */}
           {selectedPointData && (
-            <div className="mb-4 p-3 bg-blue-900/30 rounded-lg border border-blue-500/50">
-              <h2 className="text-sm font-semibold mb-2 text-blue-400">
+            <div className="mb-5 p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-xl border border-blue-500/20 backdrop-blur-sm">
+              <h2 className="text-xs font-semibold mb-3 text-blue-400 uppercase tracking-wider">
                 Point #{points.findIndex(p => p.id === selectedPoint) + 1}
               </h2>
               
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">X Position</label>
+                    <label className="block text-xs text-slate-500 mb-1.5">X Position</label>
                     <input
                       type="number"
                       min="0"
@@ -951,11 +961,11 @@ function App() {
                       step="0.01"
                       value={selectedPointData.x.toFixed(2)}
                       onChange={(e) => updatePoint('x', Math.max(0, Math.min(1, parseFloat(e.target.value) || 0)))}
-                      className="w-full px-2 py-1.5 bg-gray-700 rounded text-xs border border-gray-600 focus:border-blue-500 focus:outline-none"
+                      className="w-full px-3 py-2 bg-white/5 rounded-lg text-xs border border-white/10 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Y Position</label>
+                    <label className="block text-xs text-slate-500 mb-1.5">Y Position</label>
                     <input
                       type="number"
                       min="0"
@@ -963,14 +973,14 @@ function App() {
                       step="0.01"
                       value={selectedPointData.y.toFixed(2)}
                       onChange={(e) => updatePoint('y', Math.max(0, Math.min(1, parseFloat(e.target.value) || 0)))}
-                      className="w-full px-2 py-1.5 bg-gray-700 rounded text-xs border border-gray-600 focus:border-blue-500 focus:outline-none"
+                      className="w-full px-3 py-2 bg-white/5 rounded-lg text-xs border border-white/10 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                     />
                   </div>
                 </div>
                 
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">
-                    Point Radius: {(selectedPointData.radius * 100).toFixed(0)}%
+                  <label className="block text-xs text-slate-500 mb-2">
+                    Point Radius: <span className="text-purple-400 font-medium">{(selectedPointData.radius * 100).toFixed(0)}%</span>
                   </label>
                   <input
                     type="range"
@@ -979,16 +989,16 @@ function App() {
                     step="0.005"
                     value={selectedPointData.radius}
                     onChange={(e) => updatePoint('radius', parseFloat(e.target.value))}
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                    className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-purple-500"
                   />
                 </div>
                 
                 <button
                   onClick={togglePointType}
-                  className={`w-full px-3 py-2 rounded text-xs font-medium transition-colors ${
+                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                     selectedPointData.type === 'smooth'
-                      ? 'bg-purple-600 hover:bg-purple-500'
-                      : 'bg-gray-700 hover:bg-gray-600'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/25'
+                      : 'bg-white/5 hover:bg-white/10 border border-white/10'
                   }`}
                 >
                   Type: {selectedPointData.type === 'smooth' ? '● Smooth' : '■ Corner'}
@@ -998,21 +1008,21 @@ function App() {
           )}
 
           {!selectedPointData && !addMode && (
-            <div className="mb-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
-              <p className="text-xs text-gray-400 text-center">
+            <div className="mb-5 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10">
+              <p className="text-xs text-slate-500 text-center">
                 Click a point to select and edit it
               </p>
             </div>
           )}
 
           {/* ClipPath ID */}
-          <div className="mb-4">
-            <label className="block text-xs text-gray-400 mb-1">ClipPath ID</label>
+          <div className="mb-5">
+            <label className="block text-xs text-slate-500 mb-2">ClipPath ID</label>
             <input
               type="text"
               value={clipPathId}
               onChange={(e) => setClipPathId(e.target.value.replace(/\s/g, ''))}
-              className="w-full px-3 py-2 bg-gray-700 rounded text-sm border border-gray-600 focus:border-blue-500 focus:outline-none"
+              className="w-full px-4 py-2.5 bg-white/5 rounded-xl text-sm border border-white/10 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
               placeholder="customClip"
             />
           </div>
@@ -1020,108 +1030,112 @@ function App() {
           {/* Copy Button */}
           <button
             onClick={copyCode}
-            className={`w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+            className={`w-full px-5 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
               copied 
-                ? 'bg-green-600 text-white' 
-                : 'bg-blue-600 hover:bg-blue-500'
+                ? 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-lg shadow-emerald-500/30' 
+                : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.02] active:scale-[0.98]'
             }`}
           >
             {copied ? '✓ Copied to Clipboard!' : 'Copy SVG Code'}
           </button>
 
           {/* Keyboard Shortcuts */}
-          <div className="mt-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
-            <h2 className="text-sm font-semibold mb-2 text-gray-300">⌨️ Keyboard Shortcuts</h2>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Add Mode</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">A</kbd>
+          <div className="mt-5 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10">
+            <h2 className="text-xs font-semibold mb-3 text-slate-400 uppercase tracking-wider">⌨️ Shortcuts</h2>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Add Mode</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">A</kbd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Snap Grid</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">S</kbd>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Snap Grid</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">S</kbd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Show Grid</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">G</kbd>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Show Grid</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">G</kbd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Toggle Type</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">T</kbd>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Toggle Type</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">T</kbd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Delete Point</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">Del</kbd>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Delete Point</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Del</kbd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Deselect</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">Esc</kbd>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Deselect</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Esc</kbd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Next Point</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">Tab</kbd>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Next Point</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Tab</kbd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Prev Point</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">⇧Tab</kbd>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Prev Point</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">⇧Tab</kbd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Move Point</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">↑↓←→</kbd>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Move Point</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">↑↓←→</kbd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Reorder</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">Ctrl+↑↓</kbd>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Reorder</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Ctrl+↑↓</kbd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Grid +/-</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">+ -</kbd>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Grid +/-</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">+ -</kbd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Fullscreen</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">F</kbd>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Fullscreen</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">F</kbd>
               </div>
-              <div className="flex justify-between col-span-2">
-                <span className="text-gray-500">Copy Code</span>
-                <kbd className="bg-gray-700 px-1.5 rounded">Ctrl+C</kbd>
+              <div className="flex justify-between items-center col-span-2">
+                <span className="text-slate-500">Copy Code</span>
+                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Ctrl+C</kbd>
               </div>
             </div>
           </div>
         </div>
 
         {/* Main Canvas */}
-        <div className={`flex-1 p-6 overflow-auto bg-gray-900 ${isFullscreen ? 'p-4' : ''}`}>
+        <div className={`flex-1 p-8 overflow-auto ${isFullscreen ? 'p-4' : ''}`}>
           <div className={`mx-auto ${isFullscreen ? 'max-w-full h-full' : 'max-w-5xl'}`}>
             {/* Canvas Container */}
             <div 
               ref={canvasContainerRef}
-              className={`bg-gray-800 rounded-xl p-4 mb-6 ${isFullscreen ? 'h-full flex flex-col' : ''}`}
+              className={`bg-white/5 backdrop-blur-xl rounded-2xl p-5 mb-8 border border-white/10 ${isFullscreen ? 'h-full flex flex-col' : ''}`}
             >
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-sm font-semibold text-gray-300">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-sm font-semibold text-slate-300">
                   Editor Canvas 
-                  <span className="ml-2 text-gray-500 font-normal">({aspectRatio})</span>
+                  <span className="ml-2 text-slate-500 font-normal">({aspectRatio})</span>
                 </h2>
-                <div className="flex gap-4 text-xs">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-red-500"></span> Corner
+                <div className="flex gap-5 text-xs">
+                  <span className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-gradient-to-br from-red-400 to-rose-500 shadow-lg shadow-red-500/30"></span>
+                    <span className="text-slate-400">Corner</span>
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-purple-500"></span> Smooth
+                  <span className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 shadow-lg shadow-purple-500/30"></span>
+                    <span className="text-slate-400">Smooth</span>
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-blue-500"></span> Selected
+                  <span className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 shadow-lg shadow-blue-500/30"></span>
+                    <span className="text-slate-400">Selected</span>
                   </span>
                   {addMode && insertMode === 'after' && (
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-3 h-3 rounded-full bg-green-500"></span> Insert After
+                    <span className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 shadow-lg shadow-emerald-500/30"></span>
+                      <span className="text-slate-400">Insert After</span>
                     </span>
                   )}
                 </div>
               </div>
               
               <div 
-                className={`relative bg-gray-950 rounded-lg overflow-hidden border-2 border-gray-700 mx-auto ${isFullscreen ? 'flex-1' : ''}`}
+                className={`relative bg-slate-950/80 rounded-xl overflow-hidden border-2 border-white/10 mx-auto shadow-2xl shadow-black/50 ${isFullscreen ? 'flex-1' : ''}`}
                 style={{ 
                   aspectRatio: `${ar.width}/${ar.height}`,
                   maxHeight: isFullscreen ? 'calc(100vh - 120px)' : `${canvasHeight}px`,
@@ -1353,23 +1367,23 @@ function App() {
               </div>
               
               {/* Coordinate labels */}
-              <div className="mt-2 flex justify-between text-xs text-gray-500 px-1">
-                <span>0,0</span>
-                <span className="text-gray-400">
+              <div className="mt-3 flex justify-between text-xs text-slate-600 px-1">
+                <span className="font-mono">0,0</span>
+                <span className="text-slate-500">
                   {gridSize}×{gridSize} grid {snapToGrid && '• Snap ON'}
                   {addMode && ` • ${insertMode === 'smart' ? 'Smart Edge' : 'After Point'} mode`}
                 </span>
-                <span>1,1</span>
+                <span className="font-mono">1,1</span>
               </div>
             </div>
 
             {/* Preview Section */}
             {!isFullscreen && (
               <>
-                <div className="grid grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-2 gap-8 mb-8">
                   {/* Live Preview */}
-                  <div className="bg-gray-800 rounded-xl p-4">
-                    <h2 className="text-sm font-semibold mb-3 text-gray-300">Live Preview</h2>
+                  <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10">
+                    <h2 className="text-sm font-semibold mb-4 text-slate-300">Live Preview</h2>
                     
                     <svg width="0" height="0">
                       <defs>
@@ -1379,11 +1393,11 @@ function App() {
                       </defs>
                     </svg>
                     
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs text-gray-400 mb-2">Gradient</p>
+                        <p className="text-xs text-slate-500 mb-2">Gradient</p>
                         <div
-                          className="aspect-square rounded"
+                          className="aspect-square rounded-xl shadow-lg"
                           style={{ 
                             clipPath: 'url(#livePreview)',
                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)'
@@ -1391,16 +1405,16 @@ function App() {
                         />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400 mb-2">Solid</p>
+                        <p className="text-xs text-slate-500 mb-2">Solid</p>
                         <div
-                          className="aspect-square bg-emerald-500"
+                          className="aspect-square bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl shadow-lg"
                           style={{ clipPath: 'url(#livePreview)' }}
                         />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400 mb-2">Image 1</p>
+                        <p className="text-xs text-slate-500 mb-2">Image 1</p>
                         <div
-                          className="aspect-square bg-cover bg-center"
+                          className="aspect-square bg-cover bg-center rounded-xl shadow-lg"
                           style={{ 
                             clipPath: 'url(#livePreview)',
                             backgroundImage: 'url(https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=400)'
@@ -1408,9 +1422,9 @@ function App() {
                         />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400 mb-2">Image 2</p>
+                        <p className="text-xs text-slate-500 mb-2">Image 2</p>
                         <div
-                          className="aspect-square bg-cover bg-center"
+                          className="aspect-square bg-cover bg-center rounded-xl shadow-lg"
                           style={{ 
                             clipPath: 'url(#livePreview)',
                             backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400)'
@@ -1421,22 +1435,22 @@ function App() {
                   </div>
 
                   {/* Code Output */}
-                  <div className="bg-gray-800 rounded-xl p-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <h2 className="text-sm font-semibold text-gray-300">Generated Code</h2>
+                  <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-sm font-semibold text-slate-300">Generated Code</h2>
                       <button
                         onClick={copyCode}
-                        className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                           copied 
-                            ? 'bg-green-600 text-white' 
-                            : 'bg-gray-700 hover:bg-gray-600'
+                            ? 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-lg shadow-emerald-500/25' 
+                            : 'bg-white/10 hover:bg-white/20 border border-white/10'
                         }`}
                       >
                         {copied ? '✓ Copied' : 'Copy'}
                       </button>
                     </div>
-                    <pre className="bg-gray-950 rounded-lg p-3 overflow-auto text-xs max-h-80 border border-gray-700">
-                      <code className="text-green-400 whitespace-pre-wrap break-all">
+                    <pre className="bg-slate-950/80 rounded-xl p-4 overflow-auto text-xs max-h-80 border border-white/10">
+                      <code className="text-emerald-400 whitespace-pre-wrap break-all font-mono">
                         {generateSvgCode()}
                       </code>
                     </pre>
@@ -1444,9 +1458,9 @@ function App() {
                 </div>
 
                 {/* Path Data */}
-                <div className="bg-gray-800 rounded-xl p-4">
-                  <h2 className="text-sm font-semibold mb-2 text-gray-300">Raw Path Data</h2>
-                  <div className="bg-gray-950 rounded-lg p-3 overflow-x-auto border border-gray-700">
+                <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10">
+                  <h2 className="text-sm font-semibold mb-3 text-slate-300">Raw Path Data</h2>
+                  <div className="bg-slate-950/80 rounded-xl p-4 overflow-x-auto border border-white/10">
                     <code className="text-xs text-blue-400 break-all font-mono">{pathD}</code>
                   </div>
                 </div>
