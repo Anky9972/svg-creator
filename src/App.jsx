@@ -686,7 +686,7 @@ function App() {
                 <button
                   key={key}
                   onClick={() => loadPreset(key)}
-                  className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  className="px-3 py-2 bg-[#252a36] hover:bg-[#2d333f] border border-[#333844] rounded-lg text-xs font-medium transition-all duration-200"
                 >
                   {preset.name}
                 </button>
@@ -907,7 +907,7 @@ function App() {
           </div>
 
           {/* Corner Rounding */}
-          <div className="mb-5 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 backdrop-blur-sm">
+          <div className="mb-5 p-4 bg-[#1c2029] rounded-xl border border-[#252a36]">
             <h2 className="text-xs font-semibold mb-3 text-slate-400 uppercase tracking-wider">Corner Rounding</h2>
             
             <div className="space-y-4">
@@ -922,20 +922,20 @@ function App() {
                   step="0.005"
                   value={globalRadius}
                   onChange={(e) => setGlobalRadius(parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-amber-500"
+                  className="w-full h-1.5 bg-[#252a36] rounded-full appearance-none cursor-pointer accent-amber-500"
                 />
               </div>
               
               <div className="flex gap-2">
                 <button
                   onClick={applyGlobalRadius}
-                  className="flex-1 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 rounded-lg text-xs font-semibold transition-all duration-200 shadow-lg shadow-amber-500/20"
+                  className="flex-1 px-3 py-2 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-semibold transition-all duration-200"
                 >
                   Apply to All
                 </button>
                 <button
                   onClick={resetAllRadii}
-                  className="flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-medium transition-all"
+                  className="flex-1 px-3 py-2 bg-[#252a36] hover:bg-[#2d333f] border border-[#333844] rounded-lg text-xs font-medium transition-all"
                 >
                   Reset All
                 </button>
@@ -945,7 +945,7 @@ function App() {
 
           {/* Selected Point Properties */}
           {selectedPointData && (
-            <div className="mb-5 p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-xl border border-blue-500/20 backdrop-blur-sm">
+            <div className="mb-5 p-4 bg-[#1a2332] rounded-xl border border-blue-500/30">
               <h2 className="text-xs font-semibold mb-3 text-blue-400 uppercase tracking-wider">
                 Point #{points.findIndex(p => p.id === selectedPoint) + 1}
               </h2>
@@ -961,7 +961,7 @@ function App() {
                       step="0.01"
                       value={selectedPointData.x.toFixed(2)}
                       onChange={(e) => updatePoint('x', Math.max(0, Math.min(1, parseFloat(e.target.value) || 0)))}
-                      className="w-full px-3 py-2 bg-white/5 rounded-lg text-xs border border-white/10 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3 py-2 bg-[#252a36] rounded-lg text-xs border border-[#333844] focus:border-blue-500 focus:outline-none transition-all"
                     />
                   </div>
                   <div>
@@ -973,7 +973,7 @@ function App() {
                       step="0.01"
                       value={selectedPointData.y.toFixed(2)}
                       onChange={(e) => updatePoint('y', Math.max(0, Math.min(1, parseFloat(e.target.value) || 0)))}
-                      className="w-full px-3 py-2 bg-white/5 rounded-lg text-xs border border-white/10 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3 py-2 bg-[#252a36] rounded-lg text-xs border border-[#333844] focus:border-blue-500 focus:outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -989,7 +989,7 @@ function App() {
                     step="0.005"
                     value={selectedPointData.radius}
                     onChange={(e) => updatePoint('radius', parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-purple-500"
+                    className="w-full h-1.5 bg-[#252a36] rounded-full appearance-none cursor-pointer accent-purple-500"
                   />
                 </div>
                 
@@ -997,8 +997,8 @@ function App() {
                   onClick={togglePointType}
                   className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                     selectedPointData.type === 'smooth'
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/25'
-                      : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-[#252a36] hover:bg-[#2d333f] border border-[#333844]'
                   }`}
                 >
                   Type: {selectedPointData.type === 'smooth' ? '● Smooth' : '■ Corner'}
@@ -1008,7 +1008,7 @@ function App() {
           )}
 
           {!selectedPointData && !addMode && (
-            <div className="mb-5 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10">
+            <div className="mb-5 p-4 bg-[#1c2029] rounded-xl border border-[#252a36]">
               <p className="text-xs text-slate-500 text-center">
                 Click a point to select and edit it
               </p>
@@ -1022,7 +1022,7 @@ function App() {
               type="text"
               value={clipPathId}
               onChange={(e) => setClipPathId(e.target.value.replace(/\s/g, ''))}
-              className="w-full px-4 py-2.5 bg-white/5 rounded-xl text-sm border border-white/10 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+              className="w-full px-4 py-2.5 bg-[#252a36] rounded-xl text-sm border border-[#333844] focus:border-blue-500 focus:outline-none transition-all"
               placeholder="customClip"
             />
           </div>
@@ -1032,80 +1032,80 @@ function App() {
             onClick={copyCode}
             className={`w-full px-5 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
               copied 
-                ? 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-lg shadow-emerald-500/30' 
-                : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.02] active:scale-[0.98]'
+                ? 'bg-emerald-600' 
+                : 'bg-blue-600 hover:bg-blue-500'
             }`}
           >
             {copied ? '✓ Copied to Clipboard!' : 'Copy SVG Code'}
           </button>
 
           {/* Keyboard Shortcuts */}
-          <div className="mt-5 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10">
+          <div className="mt-5 p-4 bg-[#1c2029] rounded-xl border border-[#252a36]">
             <h2 className="text-xs font-semibold mb-3 text-slate-400 uppercase tracking-wider">⌨️ Shortcuts</h2>
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Add Mode</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">A</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">A</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Snap Grid</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">S</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">S</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Show Grid</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">G</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">G</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Toggle Type</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">T</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">T</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Delete Point</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Del</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Del</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Deselect</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Esc</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Esc</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Next Point</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Tab</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Tab</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Prev Point</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">⇧Tab</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">⇧Tab</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Move Point</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">↑↓←→</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">↑↓←→</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Reorder</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Ctrl+↑↓</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Ctrl+↑↓</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Grid +/-</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">+ -</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">+ -</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Fullscreen</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">F</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">F</kbd>
               </div>
               <div className="flex justify-between items-center col-span-2">
                 <span className="text-slate-500">Copy Code</span>
-                <kbd className="bg-white/10 px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Ctrl+C</kbd>
+                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Ctrl+C</kbd>
               </div>
             </div>
           </div>
         </div>
 
         {/* Main Canvas */}
-        <div className={`flex-1 p-8 overflow-auto ${isFullscreen ? 'p-4' : ''}`}>
+        <div className={`flex-1 p-8 overflow-auto bg-[#0f1117] ${isFullscreen ? 'p-4' : ''}`}>
           <div className={`mx-auto ${isFullscreen ? 'max-w-full h-full' : 'max-w-5xl'}`}>
             {/* Canvas Container */}
             <div 
               ref={canvasContainerRef}
-              className={`bg-white/5 backdrop-blur-xl rounded-2xl p-5 mb-8 border border-white/10 ${isFullscreen ? 'h-full flex flex-col' : ''}`}
+              className={`bg-[#161922] rounded-2xl p-5 mb-8 border border-[#252a36] ${isFullscreen ? 'h-full flex flex-col' : ''}`}
             >
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-sm font-semibold text-slate-300">
@@ -1114,20 +1114,20 @@ function App() {
                 </h2>
                 <div className="flex gap-5 text-xs">
                   <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-br from-red-400 to-rose-500 shadow-lg shadow-red-500/30"></span>
+                    <span className="w-3 h-3 rounded-full bg-red-500"></span>
                     <span className="text-slate-400">Corner</span>
                   </span>
                   <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 shadow-lg shadow-purple-500/30"></span>
+                    <span className="w-3 h-3 rounded-full bg-purple-500"></span>
                     <span className="text-slate-400">Smooth</span>
                   </span>
                   <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 shadow-lg shadow-blue-500/30"></span>
+                    <span className="w-3 h-3 rounded-full bg-blue-500"></span>
                     <span className="text-slate-400">Selected</span>
                   </span>
                   {addMode && insertMode === 'after' && (
                     <span className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 shadow-lg shadow-emerald-500/30"></span>
+                      <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
                       <span className="text-slate-400">Insert After</span>
                     </span>
                   )}
@@ -1135,7 +1135,7 @@ function App() {
               </div>
               
               <div 
-                className={`relative bg-slate-950/80 rounded-xl overflow-hidden border-2 border-white/10 mx-auto shadow-2xl shadow-black/50 ${isFullscreen ? 'flex-1' : ''}`}
+                className={`relative bg-[#0a0b0f] rounded-xl overflow-hidden border-2 border-[#252a36] mx-auto ${isFullscreen ? 'flex-1' : ''}`}
                 style={{ 
                   aspectRatio: `${ar.width}/${ar.height}`,
                   maxHeight: isFullscreen ? 'calc(100vh - 120px)' : `${canvasHeight}px`,
@@ -1382,7 +1382,7 @@ function App() {
               <>
                 <div className="grid grid-cols-2 gap-8 mb-8">
                   {/* Live Preview */}
-                  <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10">
+                  <div className="bg-[#161922] rounded-2xl p-5 border border-[#252a36]">
                     <h2 className="text-sm font-semibold mb-4 text-slate-300">Live Preview</h2>
                     
                     <svg width="0" height="0">
@@ -1397,7 +1397,7 @@ function App() {
                       <div>
                         <p className="text-xs text-slate-500 mb-2">Gradient</p>
                         <div
-                          className="aspect-square rounded-xl shadow-lg"
+                          className="aspect-square rounded-xl"
                           style={{ 
                             clipPath: 'url(#livePreview)',
                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)'
@@ -1407,14 +1407,14 @@ function App() {
                       <div>
                         <p className="text-xs text-slate-500 mb-2">Solid</p>
                         <div
-                          className="aspect-square bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl shadow-lg"
+                          className="aspect-square bg-emerald-500 rounded-xl"
                           style={{ clipPath: 'url(#livePreview)' }}
                         />
                       </div>
                       <div>
                         <p className="text-xs text-slate-500 mb-2">Image 1</p>
                         <div
-                          className="aspect-square bg-cover bg-center rounded-xl shadow-lg"
+                          className="aspect-square bg-cover bg-center rounded-xl"
                           style={{ 
                             clipPath: 'url(#livePreview)',
                             backgroundImage: 'url(https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=400)'
@@ -1424,7 +1424,7 @@ function App() {
                       <div>
                         <p className="text-xs text-slate-500 mb-2">Image 2</p>
                         <div
-                          className="aspect-square bg-cover bg-center rounded-xl shadow-lg"
+                          className="aspect-square bg-cover bg-center rounded-xl"
                           style={{ 
                             clipPath: 'url(#livePreview)',
                             backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400)'
@@ -1435,21 +1435,21 @@ function App() {
                   </div>
 
                   {/* Code Output */}
-                  <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10">
+                  <div className="bg-[#161922] rounded-2xl p-5 border border-[#252a36]">
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-sm font-semibold text-slate-300">Generated Code</h2>
                       <button
                         onClick={copyCode}
                         className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                           copied 
-                            ? 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-lg shadow-emerald-500/25' 
-                            : 'bg-white/10 hover:bg-white/20 border border-white/10'
+                            ? 'bg-emerald-600' 
+                            : 'bg-[#252a36] hover:bg-[#2d333f] border border-[#333844]'
                         }`}
                       >
                         {copied ? '✓ Copied' : 'Copy'}
                       </button>
                     </div>
-                    <pre className="bg-slate-950/80 rounded-xl p-4 overflow-auto text-xs max-h-80 border border-white/10">
+                    <pre className="bg-[#0a0b0f] rounded-xl p-4 overflow-auto text-xs max-h-80 border border-[#252a36]">
                       <code className="text-emerald-400 whitespace-pre-wrap break-all font-mono">
                         {generateSvgCode()}
                       </code>
@@ -1458,9 +1458,9 @@ function App() {
                 </div>
 
                 {/* Path Data */}
-                <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10">
+                <div className="bg-[#161922] rounded-2xl p-5 border border-[#252a36]">
                   <h2 className="text-sm font-semibold mb-3 text-slate-300">Raw Path Data</h2>
-                  <div className="bg-slate-950/80 rounded-xl p-4 overflow-x-auto border border-white/10">
+                  <div className="bg-[#0a0b0f] rounded-xl p-4 overflow-x-auto border border-[#252a36]">
                     <code className="text-xs text-blue-400 break-all font-mono">{pathD}</code>
                   </div>
                 </div>

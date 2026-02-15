@@ -1,16 +1,35 @@
 {
-  "name": "svg-creator",
+  "name": "svg-clippath-creator",
   "version": "1.0.0",
-  "description": "SVG ClipPath Mask Creator",
+  "description": "A modern, interactive tool for creating custom SVG clip-path masks with an intuitive visual editor",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "svg",
+    "clippath",
+    "clip-path",
+    "mask",
+    "editor",
+    "react",
+    "vite",
+    "tailwindcss",
+    "visual-editor",
+    "design-tool"
+  ],
+  "author": "Anky9972",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Anky9972/svg-creator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Anky9972/svg-creator/issues"
+  },
+  "homepage": "https://github.com/Anky9972/svg-creator#readme",
   "dependencies": {
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
