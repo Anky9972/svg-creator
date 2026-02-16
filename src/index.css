@@ -6,6 +6,13 @@
   height: 8px;
 }
 
+@media (max-width: 640px) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+}
+
 ::-webkit-scrollbar-track {
   background: #161922;
   border-radius: 4px;
@@ -18,6 +25,11 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #333844;
+}
+
+/* Prevent body scroll when mobile sidebar is open */
+body.sidebar-open {
+  overflow: hidden;
 }
 
 /* Range input styling */

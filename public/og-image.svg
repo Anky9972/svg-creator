@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f1117"/>
+      <stop offset="100%" stop-color="#1a1d2e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+    <linearGradient id="shape" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#667eea" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#764ba2" stop-opacity="0.3"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Grid pattern -->
+  <g opacity="0.08" stroke="#667eea" stroke-width="0.5">
+    <line x1="600" y1="115" x2="600" y2="515" /><line x1="650" y1="115" x2="650" y2="515" />
+    <line x1="700" y1="115" x2="700" y2="515" /><line x1="750" y1="115" x2="750" y2="515" />
+    <line x1="800" y1="115" x2="800" y2="515" /><line x1="850" y1="115" x2="850" y2="515" />
+    <line x1="900" y1="115" x2="900" y2="515" /><line x1="950" y1="115" x2="950" y2="515" />
+    <line x1="1000" y1="115" x2="1000" y2="515" /><line x1="1050" y1="115" x2="1050" y2="515" />
+    <line x1="1100" y1="115" x2="1100" y2="515" />
+    <line x1="600" y1="165" x2="1150" y2="165" /><line x1="600" y1="215" x2="1150" y2="215" />
+    <line x1="600" y1="265" x2="1150" y2="265" /><line x1="600" y1="315" x2="1150" y2="315" />
+    <line x1="600" y1="365" x2="1150" y2="365" /><line x1="600" y1="415" x2="1150" y2="415" />
+    <line x1="600" y1="465" x2="1150" y2="465" /><line x1="600" y1="515" x2="1150" y2="515" />
+  </g>
+  <!-- Shape preview -->
+  <polygon points="700,155 1050,155 1100,315 1050,475 700,475 650,315" fill="url(#shape)" stroke="url(#accent)" stroke-width="2"/>
+  <!-- Control points -->
+  <circle cx="700" cy="155" r="8" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <circle cx="1050" cy="155" r="8" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <circle cx="1100" cy="315" r="8" fill="#a855f7" stroke="#fff" stroke-width="2"/>
+  <circle cx="1050" cy="475" r="8" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <circle cx="700" cy="475" r="8" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <circle cx="650" cy="315" r="8" fill="#a855f7" stroke="#fff" stroke-width="2"/>
+  <!-- Selected point highlight -->
+  <circle cx="700" cy="155" r="14" fill="none" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4,3"/>
+  <!-- Branding -->
+  <text x="80" y="240" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="800" fill="white">SVGCanvas</text>
+  <text x="80" y="290" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#94a3b8">Free Online SVG Clip-Path Editor</text>
+  <!-- Feature pills -->
+  <rect x="80" y="330" width="140" height="36" rx="18" fill="#667eea" fill-opacity="0.2" stroke="#667eea" stroke-opacity="0.4"/>
+  <text x="150" y="354" font-family="system-ui, sans-serif" font-size="14" fill="#667eea" text-anchor="middle" font-weight="600">Drag &amp; Drop</text>
+  <rect x="235" y="330" width="120" height="36" rx="18" fill="#a855f7" fill-opacity="0.2" stroke="#a855f7" stroke-opacity="0.4"/>
+  <text x="295" y="354" font-family="system-ui, sans-serif" font-size="14" fill="#a855f7" text-anchor="middle" font-weight="600">15+ Shapes</text>
+  <rect x="370" y="330" width="150" height="36" rx="18" fill="#10b981" fill-opacity="0.2" stroke="#10b981" stroke-opacity="0.4"/>
+  <text x="445" y="354" font-family="system-ui, sans-serif" font-size="14" fill="#10b981" text-anchor="middle" font-weight="600">SVG / PNG / CSS</text>
+  <!-- URL -->
+  <text x="80" y="500" font-family="system-ui, sans-serif" font-size="18" fill="#64748b">svgcanvas.netlify.app</text>
+  <!-- Divider line -->
+  <line x1="580" y1="140" x2="580" y2="490" stroke="#252a36" stroke-width="1"/>
+</svg>

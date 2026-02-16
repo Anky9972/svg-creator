@@ -1,24 +1,35 @@
 {
-  "name": "svg-clippath-creator",
+  "name": "svgcanvas",
   "version": "1.0.0",
-  "description": "A modern, interactive tool for creating custom SVG clip-path masks with an intuitive visual editor",
+  "description": "SVGCanvas - Professional online SVG clip-path editor with visual drag-and-drop interface. Create custom shapes, export to SVG/PNG, and generate CSS clip-path code instantly. Free web-based tool for designers and developers.",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "node scripts/generate-assets.mjs && vite build",
+    "preview": "vite preview",
+    "generate-assets": "node scripts/generate-assets.mjs"
   },
   "keywords": [
     "svg",
+    "svgcanvas",
     "clippath",
     "clip-path",
-    "mask",
-    "editor",
+    "clip-path-generator",
+    "svg-editor",
+    "online-svg-tool",
+    "css-clip-path",
+    "clip-path-maker",
+    "svg-mask",
+    "shape-editor",
+    "visual-editor",
+    "design-tool",
     "react",
     "vite",
     "tailwindcss",
-    "visual-editor",
-    "design-tool"
+    "svg-generator",
+    "web-design",
+    "frontend-tools",
+    "graphic-design"
   ],
   "author": "Anky9972",
   "license": "MIT",
@@ -37,6 +48,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.18",
     "@vitejs/plugin-react": "^5.1.4",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.18",
     "vite": "^7.3.1"
   }
