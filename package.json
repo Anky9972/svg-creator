@@ -1,7 +1,7 @@
 {
   "name": "svgcanvas",
   "version": "1.0.0",
-  "description": "SVGCanvas - Professional online SVG clip-path editor with visual drag-and-drop interface. Create custom shapes, export to SVG/PNG, and generate CSS clip-path code instantly. Free web-based tool for designers and developers.",
+  "description": "A free clip path editor online and SVG path generator. Use our visual path editor to convert clip path to SVG or SVG to clip path. The ultimate clippath editor.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,26 +10,23 @@
     "generate-assets": "node scripts/generate-assets.mjs"
   },
   "keywords": [
-    "svg",
+    "clippath editor",
+    "path editor online",
+    "clip path editor online",
+    "svg path generator",
     "svgcanvas",
+    "clip path to svg",
+    "svg to clip path",
+    "clip-path editor",
+    "clip path editor",
+    "svg path creator",
+    "svg",
     "clippath",
     "clip-path",
-    "clip-path-generator",
     "svg-editor",
-    "online-svg-tool",
-    "css-clip-path",
-    "clip-path-maker",
-    "svg-mask",
-    "shape-editor",
     "visual-editor",
-    "design-tool",
     "react",
-    "vite",
-    "tailwindcss",
-    "svg-generator",
-    "web-design",
-    "frontend-tools",
-    "graphic-design"
+    "vite"
   ],
   "author": "Anky9972",
   "license": "MIT",
@@ -40,7 +37,7 @@
   "bugs": {
     "url": "https://github.com/Anky9972/svg-creator/issues"
   },
-  "homepage": "https://github.com/Anky9972/svg-creator#readme",
+  "homepage": "https://svgcanvas.netlify.app/",
   "dependencies": {
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

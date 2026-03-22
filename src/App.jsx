@@ -1171,7 +1171,192 @@ const StyledDiv = styled.div\`
     const encoded = btoa(JSON.stringify(data))
     const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`
     navigator.clipboard.writeText(url)
-    alert('Share link copied to clipboard!')
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  // Share on social media
+  const shareOnTwitter = () => {
+    const data = {
+      points,
+      clipPathId,
+      globalRadius,
+      aspectRatio
+    }
+    const encoded = btoa(JSON.stringify(data))
+    const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`
+    const text = `Check out my custom SVG clip-path design!`
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
+    window.open(twitterUrl, '_blank')
+  }
+
+  const shareOnLinkedIn = () => {
+    const data = {
+      points,
+      clipPathId,
+      globalRadius,
+      aspectRatio
+    }
+    const encoded = btoa(JSON.stringify(data))
+    const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`
+    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
+    window.open(linkedInUrl, '_blank')
+  }
+
+  const shareOnFacebook = () => {
+    const data = {
+      points,
+      clipPathId,
+      globalRadius,
+      aspectRatio
+    }
+    const encoded = btoa(JSON.stringify(data))
+    const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`
+    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
+    window.open(facebookUrl, '_blank')
+  }
+
+  // Export as WebP
+  const exportWebP = async (size = 1000) => {
+    const path = pathD
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" width="${size}" height="${size}">
+  <defs>
+    <clipPath id="${clipPathId}-export" clipPathUnits="objectBoundingBox">
+      <path d="${path}" />
+    </clipPath>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:${previewColors.gradient1};stop-opacity:1" />
+      <stop offset="50%" style="stop-color:${previewColors.gradient2};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f093fb;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1" height="1" fill="url(#grad)" clip-path="url(#${clipPathId}-export)" />
+</svg>`
+    
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')
+    
+    const img = new Image()
+    const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(svgBlob)
+    
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0)
+      canvas.toBlob((blob) => {
+        const webpUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = webpUrl
+        link.download = `${clipPathId}-${size}x${size}-${Date.now()}.webp`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(webpUrl)
+        URL.revokeObjectURL(url)
+      }, 'image/webp', 0.95)
+    }
+    
+    img.src = url
+  }
+
+  // Export PNG with custom size
+  const exportPNGWithSize = async (size = 1000) => {
+    const path = pathD
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" width="${size}" height="${size}">
+  <defs>
+    <clipPath id="${clipPathId}-export" clipPathUnits="objectBoundingBox">
+      <path d="${path}" />
+    </clipPath>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:${previewColors.gradient1};stop-opacity:1" />
+      <stop offset="50%" style="stop-color:${previewColors.gradient2};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f093fb;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1" height="1" fill="url(#grad)" clip-path="url(#${clipPathId}-export)" />
+</svg>`
+    
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')
+    
+    const img = new Image()
+    const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(svgBlob)
+    
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0)
+      canvas.toBlob((blob) => {
+        const pngUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = pngUrl
+        link.download = `${clipPathId}-${size}x${size}-${Date.now()}.png`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(pngUrl)
+        URL.revokeObjectURL(url)
+      })
+    }
+    
+    img.src = url
+  }
+
+  // Copy code in specific format
+  const copyCodeFormat = async (format) => {
+    const path = pathD
+    let code = ''
+    
+    switch (format) {
+      case 'svg':
+        code = `<svg width="0" height="0">
+  <defs>
+    <clipPath id="${clipPathId}" clipPathUnits="objectBoundingBox">
+      <path d="${path}" />
+    </clipPath>
+  </defs>
+</svg>`
+        break
+      case 'css':
+        code = `.clipped-element {
+  clip-path: url(#${clipPathId});
+}`
+        break
+      case 'polygon':
+        const polygonPoints = points.map(p => 
+          `${(p.x * 100).toFixed(1)}% ${(p.y * 100).toFixed(1)}%`
+        ).join(', ')
+        code = `.clipped-element {
+  clip-path: polygon(${polygonPoints});
+}`
+        break
+      case 'react':
+        code = `export const ClipPathSVG = () => (
+  <svg width="0" height="0">
+    <defs>
+      <clipPath id="${clipPathId}" clipPathUnits="objectBoundingBox">
+        <path d="${path}" />
+      </clipPath>
+    </defs>
+  </svg>
+)`
+        break
+      case 'path':
+        code = path
+        break
+      default:
+        code = generateCodeInFormat()
+    }
+    
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
   }
 
   // Load from URL
@@ -1236,7 +1421,8 @@ const StyledDiv = styled.div\`
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300`} style={{ backgroundColor:themeColors.bg, color: themeColors.text }}>
+    <main className={`min-h-screen transition-colors duration-300`} style={{ backgroundColor:themeColors.bg, color: themeColors.text }}>
+      <h1 className="sr-only">Free Clip Path Editor Online & SVG Path Generator</h1>
       <div className="flex h-screen relative">
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
@@ -1262,10 +1448,10 @@ const StyledDiv = styled.div\`
         </button>
 
         {/* Left Sidebar - Controls */}
-        <div className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-80 p-4 sm:p-5 overflow-y-auto shrink-0 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isFullscreen ? 'hidden' : ''}`} style={{ backgroundColor: themeColors.sidebar, borderRight: `1px solid ${themeColors.border}` }}>
-          <div className="mb-6 flex justify-between items-center">
+        <aside className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-80 p-4 sm:p-5 overflow-y-auto shrink-0 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isFullscreen ? 'hidden' : ''}`} style={{ backgroundColor: themeColors.sidebar, borderRight: `1px solid ${themeColors.border}` }} aria-label="Editor Controls">
+          <header className="mb-6 flex justify-between items-center">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold">{theme === 'dark' ? '🌙' : '☀️'} SVGCanvas</h1>
+              <h2 className="text-xl sm:text-2xl font-bold">{theme === 'dark' ? '🌙' : '☀️'} SVGCanvas</h2>
               <p className={`text-${themeColors.textMuted} text-xs mt-1`}>Create stunning clip-path masks</p>
             </div>
             <div className="flex gap-1">
@@ -1274,6 +1460,7 @@ const StyledDiv = styled.div\`
                 className="p-2 rounded-lg hover:bg-opacity-80 transition-all"
                 style={{ backgroundColor: themeColors.card }}
                 title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
               >
                 {theme === 'dark' ? '☀️' : '🌙'}
               </button>
@@ -1286,7 +1473,7 @@ const StyledDiv = styled.div\`
                 ✕
               </button>
             </div>
-          </div>
+          </header>
           
           {/* Shape Presets */}
           <div className="mb-5">
@@ -1373,6 +1560,7 @@ const StyledDiv = styled.div\`
                 </label>
               </div>
 
+              <div className={`text-xs ${themeColors.textSecondary} font-semibold mt-3 mb-1`}>Export as Image</div>
               <div className="flex gap-2">
                 <button
                   onClick={exportSVG}
@@ -1386,7 +1574,7 @@ const StyledDiv = styled.div\`
                   SVG
                 </button>
                 <button
-                  onClick={exportPNG}
+                  onClick={() => exportPNGWithSize(1000)}
                   className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2"
                   aria-label="Export as PNG file"
                   title="Download as PNG (1000x1000)"
@@ -1396,9 +1584,91 @@ const StyledDiv = styled.div\`
                   </svg>
                   PNG
                 </button>
+                <button
+                  onClick={() => exportWebP(1000)}
+                  className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+                  aria-label="Export as WebP file"
+                  title="Download as WebP (1000x1000)"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  WebP
+                </button>
               </div>
 
-              <p className={`text-xs ${themeColors.textSecondary} text-center mt-2`}>Save your work or export as image</p>
+              <div className={`text-xs ${themeColors.textSecondary} mt-2 mb-1`}>Export Sizes (PNG/WebP)</div>
+              <div className="grid grid-cols-4 gap-1.5">
+                <button
+                  onClick={() => exportPNGWithSize(512)}
+                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
+                  title="Export PNG 512x512"
+                >
+                  512px
+                </button>
+                <button
+                  onClick={() => exportPNGWithSize(1024)}
+                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
+                  title="Export PNG 1024x1024"
+                >
+                  1024px
+                </button>
+                <button
+                  onClick={() => exportPNGWithSize(2048)}
+                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
+                  title="Export PNG 2048x2048"
+                >
+                  2K
+                </button>
+                <button
+                  onClick={() => exportPNGWithSize(4096)}
+                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
+                  title="Export PNG 4096x4096"
+                >
+                  4K
+                </button>
+              </div>
+
+              <div className={`text-xs ${themeColors.textSecondary} font-semibold mt-3 mb-1`}>Copy Code</div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => copyCodeFormat('svg')}
+                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
+                  title="Copy SVG clip-path code"
+                >
+                  SVG
+                </button>
+                <button
+                  onClick={() => copyCodeFormat('css')}
+                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
+                  title="Copy CSS clip-path code"
+                >
+                  CSS
+                </button>
+                <button
+                  onClick={() => copyCodeFormat('react')}
+                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
+                  title="Copy React component"
+                >
+                  React
+                </button>
+                <button
+                  onClick={() => copyCodeFormat('polygon')}
+                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
+                  title="Copy CSS polygon"
+                >
+                  Polygon
+                </button>
+                <button
+                  onClick={() => copyCodeFormat('path')}
+                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all col-span-2`}
+                  title="Copy path data only"
+                >
+                  {copied ? '✓ Copied!' : 'Path Data'}
+                </button>
+              </div>
+
+              <p className={`text-xs ${themeColors.textSecondary} text-center mt-2`}>Export images or copy code snippets</p>
             </div>
           </div>
 
@@ -1699,15 +1969,50 @@ const StyledDiv = styled.div\`
           <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
             <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Share</h2>
             
-            <button
-              onClick={generateShareLink}
-              className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-500 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-              </svg>
-              Copy Share Link
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={generateShareLink}
+                className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-500 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                {copied ? '✓ Link Copied!' : 'Copy Share Link'}
+              </button>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={shareOnTwitter}
+                  className="px-3 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1"
+                  title="Share on Twitter"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                  </svg>
+                  <span className="hidden sm:inline">Twitter</span>
+                </button>
+                <button
+                  onClick={shareOnLinkedIn}
+                  className="px-3 py-2 bg-[#0077B5] hover:bg-[#006399] rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1"
+                  title="Share on LinkedIn"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                  <span className="hidden sm:inline">LinkedIn</span>
+                </button>
+                <button
+                  onClick={shareOnFacebook}
+                  className="px-3 py-2 bg-[#1877F2] hover:bg-[#166fe5] rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1"
+                  title="Share on Facebook"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                  <span className="hidden sm:inline">Facebook</span>
+                </button>
+              </div>
+            </div>
             <p className={`text-xs ${themeColors.textSecondary} text-center mt-2`}>Share your design with others</p>
           </div>
 
@@ -2129,10 +2434,10 @@ const StyledDiv = styled.div\`
               </div>
             </div>
           </div>
-        </div>
+        </aside>
 
         {/* Main Canvas */}
-        <div className={`flex-1 p-4 sm:p-6 lg:p-8 overflow-auto ${themeColors.mainBg} ${isFullscreen ? 'p-4!' : ''}`}>
+        <section className={`flex-1 p-4 sm:p-6 lg:p-8 overflow-auto ${themeColors.mainBg} ${isFullscreen ? 'p-4!' : ''}`} aria-label="Main Editor Canvas">
           <div className={`mx-auto ${isFullscreen ? 'max-w-full h-full' : 'max-w-5xl'}`}>
             {/* Canvas Container */}
             <div 
@@ -2576,9 +2881,9 @@ const StyledDiv = styled.div\`
               </>
             )}
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   )
 }
 
