@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { auth, googleProvider, db } from './utils/firebase';
+import { auth, googleProvider, db, saveProjectToCloud } from './utils/firebase';
 import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
 import { Routes, Route } from 'react-router-dom'
@@ -372,17 +372,22 @@ function App() {
   const logout = () => signOut(auth)
 
   const handleCloudSave = async () => {
-    if (!user) return alert('Please login to save to cloud')
+    if (!user) return alert('Please login to save to cloud');
+    
+    const shapeName = window.prompt("Enter a name for your clip-path:", "My Shape");
+    if (!shapeName) return; // user cancelled
+    
     try {
-      await addDoc(collection(db, 'projects'), {
-        userId: user.uid,
+      await saveProjectToCloud(user.uid, {
         points,
-        createdAt: serverTimestamp(),
-        name: 'My Shape'
-      })
-      alert('Saved successfully!')
+        name: shapeName,
+        clipPathId,
+        globalRadius,
+        aspectRatio
+      }, true);
+      alert('Saved successfully!');
     } catch (err) {
-      alert('Error saving project')
+      alert('Error saving project: ' + err.message);
     }
   }
 
@@ -1595,6 +1600,7 @@ const StyledDiv = styled.div\`
     canvasHeight,
     setPreviewColors,
     showGridPoints,
+    resetHistory,
   };
 
   return (
@@ -1609,7 +1615,7 @@ const StyledDiv = styled.div\`
           </div>
         </main>
       } />
-      <Route path="/community" element={<CommunityGallery themeColors={themeColors} theme={theme} />} />
+      <Route path="/community" element={<CommunityGallery {...appCtx} themeColors={themeColors} theme={theme} />} />
       <Route path="/privacy" element={<LegalPage type="privacy" themeColors={themeColors} />} />
       <Route path="/terms" element={<LegalPage type="terms" themeColors={themeColors} />} />
       <Route path="/contact" element={<LegalPage type="contact" themeColors={themeColors} />} />

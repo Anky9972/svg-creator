@@ -4,12 +4,14 @@ import { getCommunityProjects, getUserProjects } from '../utils/firebase';
 import { useEditor } from '../context/EditorContext';
 import { generatePathString } from '../utils/geometry';
 
-export default function CommunityGallery() {
+export default function CommunityGallery(props) {
+  const { user, authLoading, resetHistory, setClipPathId, setGlobalRadius, setAspectRatio, themeColors, theme } = props;
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('community'); // 'community' or 'my-projects'
-  const { user, authLoading, history, setClipPathId, setGlobalRadius, setAspectRatio } = useEditor();
   const navigate = useNavigate();
+
+  const [errorMsg, setErrorMsg] = useState(null);
 
   useEffect(() => {
     fetchProjects();
@@ -17,25 +19,34 @@ export default function CommunityGallery() {
 
   const fetchProjects = async () => {
     setLoading(true);
+    setErrorMsg(null);
     try {
+      // Add a 10 second timeout to prevent infinite spinning if Firestore hangs
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Database connection timed out. Have you created a Firestore Database in your Firebase Console?")), 10000)
+      );
+      
+      let fetchPromise;
       if (activeTab === 'community') {
-        const data = await getCommunityProjects();
-        setProjects(data);
+        fetchPromise = getCommunityProjects();
       } else if (activeTab === 'my-projects' && user) {
-        const data = await getUserProjects(user.uid);
-        setProjects(data);
+        fetchPromise = getUserProjects(user.uid);
       } else {
-        setProjects([]);
+        fetchPromise = Promise.resolve([]);
       }
+
+      const data = await Promise.race([fetchPromise, timeoutPromise]);
+      setProjects(data);
     } catch (error) {
       console.error("Failed to load projects", error);
+      setErrorMsg(error.message || "Failed to load projects.");
     } finally {
       setLoading(false);
     }
   };
 
   const loadIntoEditor = (project) => {
-    history.reset(project.points);
+    resetHistory(project.points);
     if (project.clipPathId) setClipPathId(project.clipPathId);
     if (project.globalRadius !== undefined) setGlobalRadius(project.globalRadius);
     if (project.aspectRatio) setAspectRatio(project.aspectRatio);
@@ -81,6 +92,11 @@ export default function CommunityGallery() {
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : errorMsg ? (
+          <div className="text-center py-20 bg-red-900/20 rounded-2xl border border-red-800/50">
+            <h3 className="text-xl font-bold text-red-400 mb-2">Error Loading Projects</h3>
+            <p className="text-red-300 max-w-lg mx-auto">{errorMsg}</p>
           </div>
         ) : projects.length === 0 ? (
           <div className="text-center py-20 bg-slate-900/50 rounded-2xl border border-slate-800">
