@@ -1,4 +1,14 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { auth, googleProvider, db } from './utils/firebase';
+import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { collection, addDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
+import { Routes, Route } from 'react-router-dom'
+import TopBar from './components/TopBar'
+import LeftSidebar from './components/LeftSidebar'
+import RightSidebar from './components/RightSidebar'
+import Canvas from './components/Canvas'
+import LegalPage from './LegalPage'
+import CommunityGallery from './components/CommunityGallery'
 
 // Custom hook for undo/redo functionality
 const useHistory = (initialState) => {
@@ -311,12 +321,71 @@ function App() {
   const [snapToCenter, setSnapToCenter] = useState(false)
   const [codeFormat, setCodeFormat] = useState('svg') // 'svg', 'css', 'react'
   const [showAnimation, setShowAnimation] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
   const svgRef = useRef(null)
   const canvasContainerRef = useRef(null)
   const isDragging = useRef(false)
   const dragOffset = useRef({ x: 0, y: 0 })
   const lastUpdateRef = useRef(Date.now())
+
+  // --- Auth & Community State ---
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [exportBackground, setExportBackground] = useState({ type: 'solid', value: '#1e293b' })
+  const [authError, setAuthError] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser)
+      setAuthLoading(false)
+    })
+    return () => unsubscribe()
+  }, [])
+
+  const handleEmailAuth = async (e) => {
+    e.preventDefault()
+    setAuthError('')
+    try {
+      if (isSignUp) {
+        await createUserWithEmailAndPassword(auth, email, password)
+      } else {
+        await signInWithEmailAndPassword(auth, email, password)
+      }
+    } catch (err) {
+      setAuthError(err.message)
+    }
+  }
+
+  const loginWithGoogle = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const logout = () => signOut(auth)
+
+  const handleCloudSave = async () => {
+    if (!user) return alert('Please login to save to cloud')
+    try {
+      await addDoc(collection(db, 'projects'), {
+        userId: user.uid,
+        points,
+        createdAt: serverTimestamp(),
+        name: 'My Shape'
+      })
+      alert('Saved successfully!')
+    } catch (err) {
+      alert('Error saving project')
+    }
+  }
+
 
   // Get SVG coordinates from mouse event (fixes cursor mismatch)
   const getSvgCoordinates = useCallback((e) => {
@@ -1420,1471 +1489,133 @@ const StyledDiv = styled.div\`
     textMuted: 'slate-600'
   }
 
+  // Context for extracted components
+  const appCtx = {
+    themeColors, theme, toggleTheme,
+    leftSidebarOpen, setLeftSidebarOpen, rightSidebarOpen, setRightSidebarOpen,
+    isFullscreen, toggleFullscreen,
+    user, authLoading, email, setEmail, password, setPassword,
+    isSignUp, setIsSignUp, handleEmailAuth, authError, logout, loginWithGoogle,
+    saveProjectToCloud: handleCloudSave, undo, redo, canUndo, canRedo,
+    exportSVG, exportPNGWithSize, generateShareLink, copyCode, copied,
+    aspectRatio, setAspectRatio, handlePresetShape: loadPreset,
+    snapToGrid, setSnapToGrid, snapToCenter, setSnapToCenter,
+    showGrid: showGridPoints, setShowGrid: setShowGridPoints, gridSize, setGridSize,
+    addMode, setAddMode, insertMode, setInsertMode,
+    fillColor: previewColors.solid, setFillColor: (c) => setPreviewColors({...previewColors, solid: c}),
+    customBgColor: exportBackground.value, setCustomBgColor: (c) => setExportBackground({type: 'solid', value: c}),
+    globalRadius, applyGlobalRadius, setGlobalRadius,
+    selectedPointData: selectedPoint !== null ? points[selectedPoint] : null,
+    updateSelectedPoint: (e) => {
+      if (selectedPoint === null) return;
+      const val = parseFloat(e.target.value);
+      if (!isNaN(val)) {
+        setPoints(prev => prev.map((p, i) => i === selectedPoint ? { ...p, [e.target.name]: val } : p));
+      }
+    },
+    deleteSelectedPoint: () => {
+      if (selectedPoint !== null) {
+        removePoint(selectedPoint);
+        setSelectedPoint(null);
+      }
+    },
+    toggleSymmetric: () => {
+      if (selectedPoint !== null) {
+        setPoints(prev => prev.map((p, i) => i === selectedPoint ? { ...p, symmetric: !p.symmetric } : p));
+      }
+    },
+    clipPathId, setClipPathId,
+    // Provide canvas specific ones
+    points, setPoints, selectedPoint, setSelectedPoint,
+    svgRef, canvasContainerRef, isDragging, dragOffset, lastUpdateRef,
+    zoom, pan, pathD,
+    updatePoint,
+    // Canvas specific
+    getPointById: (id) => points.find(p => p.id === id),
+    resetAllRadii: () => setPoints(prev => prev.map(p => ({ ...p, radius: 0 }))),
+    togglePointType: (index) => setPoints(prev => prev.map((p, i) => i === index ? { ...p, isCurve: !p.isCurve } : p)),
+    deletePoint: (index) => {
+      removePoint(index);
+      if (selectedPoint === index) setSelectedPoint(null);
+      else if (selectedPoint > index) setSelectedPoint(selectedPoint - 1);
+    },
+    movePointOrder: (index, direction) => {
+      const newPoints = [...points];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex >= 0 && targetIndex < newPoints.length) {
+        [newPoints[index], newPoints[targetIndex]] = [newPoints[targetIndex], newPoints[index]];
+        setPoints(newPoints);
+        if (selectedPoint === index) setSelectedPoint(targetIndex);
+        else if (selectedPoint === targetIndex) setSelectedPoint(index);
+      }
+    },
+    setInsertAfterPoint, insertAfterPoint,
+    handleMouseMove, handleTouchMove, handleMouseUp, handleCanvasClick,
+    gridPoints, handleAddPoint, handlePointMouseDown, handlePointTouchStart,
+    // Additional canvas props from full extraction
+    showAnimation, setShowAnimation,
+    exportBackground, setExportBackground,
+    exportWebP,
+    customImages, setCustomImages,
+    previewColors: { ...previewColors, solid1: previewColors.solid || '#10b981', solid2: '#3b82f6' },
+    codeFormat, setCodeFormat,
+    scaleShape: (scale) => {
+      setPoints(prev => prev.map(p => ({ ...p, x: (p.x - 0.5) * scale + 0.5, y: (p.y - 0.5) * scale + 0.5 })));
+    },
+    rotateShape: (angle) => {
+      const rad = (angle * Math.PI) / 180;
+      setPoints(prev => prev.map(p => {
+        const nx = (p.x - 0.5) * Math.cos(rad) - (p.y - 0.5) * Math.sin(rad) + 0.5;
+        const ny = (p.x - 0.5) * Math.sin(rad) + (p.y - 0.5) * Math.cos(rad) + 0.5;
+        return { ...p, x: nx, y: ny };
+      }));
+    },
+    flipHorizontal: () => setPoints(prev => prev.map(p => ({ ...p, x: 1 - p.x }))),
+    flipVertical: () => setPoints(prev => prev.map(p => ({ ...p, y: 1 - p.y }))),
+    handleImageUpload: (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        setCustomImages(prev => [url, ...prev].slice(0, 4));
+      }
+    },
+    zoomIn: () => setZoom(z => Math.min(z + 0.1, 5)),
+    zoomOut: () => setZoom(z => Math.max(z - 0.1, 0.1)),
+    resetZoom: () => { setZoom(1); setPan({x:0,y:0}); },
+    setZoom, setPan,
+    applySnapping: () => {},
+    shareOnTwitter: () => {},
+    shareOnLinkedIn: () => {},
+    shareOnFacebook: () => {},
+    copyCodeFormat: () => {},
+    saveProject: () => {},
+    loadProject: () => {},
+    generateCodeInFormat: () => pathD,
+
+    canvasHeight,
+    setPreviewColors,
+    showGridPoints,
+  };
+
   return (
-    <main className={`min-h-screen transition-colors duration-300`} style={{ backgroundColor:themeColors.bg, color: themeColors.text }}>
-      <h1 className="sr-only">Free Clip Path Editor Online & SVG Path Generator</h1>
-      <div className="flex h-screen relative">
-        {/* Mobile Sidebar Overlay */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* Mobile Toggle Button */}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className={`fixed top-4 left-4 z-50 lg:hidden p-2.5 rounded-xl shadow-lg transition-all ${isFullscreen ? 'hidden' : ''}`}
-          style={{ backgroundColor: themeColors.sidebar, border: `1px solid ${themeColors.border}` }}
-          aria-label="Toggle sidebar"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            {sidebarOpen
-              ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            }
-          </svg>
-        </button>
-
-        {/* Left Sidebar - Controls */}
-        <aside className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-80 p-4 sm:p-5 overflow-y-auto shrink-0 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isFullscreen ? 'hidden' : ''}`} style={{ backgroundColor: themeColors.sidebar, borderRight: `1px solid ${themeColors.border}` }} aria-label="Editor Controls">
-          <header className="mb-6 flex justify-between items-center">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold">{theme === 'dark' ? '🌙' : '☀️'} SVGCanvas</h2>
-              <p className={`text-${themeColors.textMuted} text-xs mt-1`}>Create stunning clip-path masks</p>
-            </div>
-            <div className="flex gap-1">
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-opacity-80 transition-all"
-                style={{ backgroundColor: themeColors.card }}
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              >
-                {theme === 'dark' ? '☀️' : '🌙'}
-              </button>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-2 rounded-lg hover:bg-opacity-80 transition-all lg:hidden"
-                style={{ backgroundColor: themeColors.card }}
-                aria-label="Close sidebar"
-              >
-                ✕
-              </button>
-            </div>
-          </header>
-          
-          {/* Shape Presets */}
-          <div className="mb-5">
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Shape Presets</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {Object.entries(SHAPE_PRESETS).map(([key, preset]) => (
-                <button
-                  key={key}
-                  onClick={() => loadPreset(key)}
-                  className={`px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-medium transition-all duration-200`}
-                  aria-label={`Load ${preset.name} preset`}
-                >
-                  {preset.name}
-                </button>
-              ))}
-            </div>
+    <Routes>
+      <Route path="/" element={
+        <main className="h-screen flex flex-col transition-colors duration-300 font-sans selection:bg-blue-500/30 selection:text-blue-200 overflow-hidden relative" style={{ backgroundColor: themeColors.bg, color: themeColors.text }}>
+          <TopBar {...appCtx} />
+          <div className="flex flex-1 overflow-hidden relative">
+            <LeftSidebar {...appCtx} />
+            <Canvas {...appCtx} />
+            <RightSidebar {...appCtx} />
           </div>
-
-          {/* Undo/Redo Controls */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>History</h2>
-            <div className="flex gap-2">
-              <button
-                onClick={undo}
-                disabled={!canUndo}
-                className={`flex-1 px-4 py-2.5 ${themeColors.buttonBg} ${themeColors.buttonHover} disabled:opacity-40 disabled:cursor-not-allowed border ${themeColors.border} rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2`}
-                aria-label="Undo last action"
-                title="Undo (Ctrl+Z)"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                </svg>
-                Undo
-              </button>
-              <button
-                onClick={redo}
-                disabled={!canRedo}
-                className={`flex-1 px-4 py-2.5 ${themeColors.buttonBg} ${themeColors.buttonHover} disabled:opacity-40 disabled:cursor-not-allowed border ${themeColors.border} rounded-xl text-xs  font-semibold transition-all duration-200 flex items-center justify-center gap-2`}
-                aria-label="Redo last undone action"
-                title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
-                </svg>
-                Redo
-              </button>
-            </div>
-          </div>
-
-          {/* Save/Load & Export */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Project & Export</h2>
-            
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <button
-                  onClick={saveProject}
-                  className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2"
-                  aria-label="Save project as JSON"
-                  title="Save project configuration"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                  </svg>
-                  Save
-                </button>
-                <label className="flex-1">
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={loadProject}
-                    className="hidden"
-                  />
-                  <div className="px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
-                    role="button"
-                    aria-label="Load project from JSON"
-                    title="Load project configuration"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    Load
-                  </div>
-                </label>
-              </div>
-
-              <div className={`text-xs ${themeColors.textSecondary} font-semibold mt-3 mb-1`}>Export as Image</div>
-              <div className="flex gap-2">
-                <button
-                  onClick={exportSVG}
-                  className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2"
-                  aria-label="Export as SVG file"
-                  title="Download as SVG"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  SVG
-                </button>
-                <button
-                  onClick={() => exportPNGWithSize(1000)}
-                  className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2"
-                  aria-label="Export as PNG file"
-                  title="Download as PNG (1000x1000)"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  PNG
-                </button>
-                <button
-                  onClick={() => exportWebP(1000)}
-                  className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2"
-                  aria-label="Export as WebP file"
-                  title="Download as WebP (1000x1000)"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  WebP
-                </button>
-              </div>
-
-              <div className={`text-xs ${themeColors.textSecondary} mt-2 mb-1`}>Export Sizes (PNG/WebP)</div>
-              <div className="grid grid-cols-4 gap-1.5">
-                <button
-                  onClick={() => exportPNGWithSize(512)}
-                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
-                  title="Export PNG 512x512"
-                >
-                  512px
-                </button>
-                <button
-                  onClick={() => exportPNGWithSize(1024)}
-                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
-                  title="Export PNG 1024x1024"
-                >
-                  1024px
-                </button>
-                <button
-                  onClick={() => exportPNGWithSize(2048)}
-                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
-                  title="Export PNG 2048x2048"
-                >
-                  2K
-                </button>
-                <button
-                  onClick={() => exportPNGWithSize(4096)}
-                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
-                  title="Export PNG 4096x4096"
-                >
-                  4K
-                </button>
-              </div>
-
-              <div className={`text-xs ${themeColors.textSecondary} font-semibold mt-3 mb-1`}>Copy Code</div>
-              <div className="grid grid-cols-2 gap-1.5">
-                <button
-                  onClick={() => copyCodeFormat('svg')}
-                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
-                  title="Copy SVG clip-path code"
-                >
-                  SVG
-                </button>
-                <button
-                  onClick={() => copyCodeFormat('css')}
-                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
-                  title="Copy CSS clip-path code"
-                >
-                  CSS
-                </button>
-                <button
-                  onClick={() => copyCodeFormat('react')}
-                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
-                  title="Copy React component"
-                >
-                  React
-                </button>
-                <button
-                  onClick={() => copyCodeFormat('polygon')}
-                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all`}
-                  title="Copy CSS polygon"
-                >
-                  Polygon
-                </button>
-                <button
-                  onClick={() => copyCodeFormat('path')}
-                  className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded text-xs transition-all col-span-2`}
-                  title="Copy path data only"
-                >
-                  {copied ? '✓ Copied!' : 'Path Data'}
-                </button>
-              </div>
-
-              <p className={`text-xs ${themeColors.textSecondary} text-center mt-2`}>Export images or copy code snippets</p>
-            </div>
-          </div>
-
-          {/* Transform Tools */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Transform</h2>
-            
-            <div className="space-y-3">
-              <div>
-                <label className={`block text-xs ${themeColors.textSecondary} mb-2`}>Scale</label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => scaleShape(0.9)}
-                    className={`flex-1 px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-semibold transition-all`}
-                    title="Scale down 10%"
-                  >
-                    90%
-                  </button>
-                  <button
-                    onClick={() => scaleShape(0.95)}
-                    className={`flex-1 px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-semibold transition-all`}
-                    title="Scale down 5%"
-                  >
-                    95%
-                  </button>
-                  <button
-                    onClick={() => scaleShape(1.05)}
-                    className={`flex-1 px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-semibold transition-all`}
-                    title="Scale up 5%"
-                  >
-                    105%
-                  </button>
-                  <button
-                    onClick={() => scaleShape(1.1)}
-                    className={`flex-1 px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-semibold transition-all`}
-                    title="Scale up 10%"
-                  >
-                    110%
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className={`block text-xs ${themeColors.textSecondary} mb-2`}>Rotate</label>
-                <div className="grid grid-cols-4 gap-2">
-                  <button
-                    onClick={() => rotateShape(-90)}
-                    className={`px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-semibold transition-all flex items-center justify-center`}
-                    title="Rotate 90° counter-clockwise"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => rotateShape(-45)}
-                    className={`px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-semibold transition-all`}
-                    title="Rotate 45° counter-clockwise"
-                  >
-                    -45°
-                  </button>
-                  <button
-                    onClick={() => rotateShape(45)}
-                    className={`px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-semibold transition-all`}
-                    title="Rotate 45° clockwise"
-                  >
-                    45°
-                  </button>
-                  <button
-                    onClick={() => rotateShape(90)}
-                    className={`px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-semibold transition-all flex items-center justify-center`}
-                    title="Rotate 90° clockwise"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className={`block text-xs ${themeColors.textSecondary} mb-2`}>Flip</label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={flipHorizontal}
-                    className={`flex-1 px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2`}
-                    title="Flip horizontally"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                    </svg>
-                    Horizontal
-                  </button>
-                  <button
-                    onClick={flipVertical}
-                    className={`flex-1 px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2`}
-                    title="Flip vertically"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                    </svg>
-                    Vertical
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Color Customization */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Preview Colors</h2>
-            
-            <div className="space-y-3">
-              <div>
-                <label className={`block text-xs ${themeColors.textSecondary} mb-2`}>Gradient Start</label>
-                <input
-                  type="color"
-                  value={previewColors.gradient1}
-                  onChange={(e) => setPreviewColors(prev => ({ ...prev, gradient1: e.target.value }))}
-                  className={`w-full h-10 rounded-lg cursor-pointer ${themeColors.buttonBg} border ${themeColors.border}`}
-                />
-              </div>
-              <div>
-                <label className={`block text-xs ${themeColors.textSecondary} mb-2`}>Gradient End</label>
-                <input
-                  type="color"
-                  value={previewColors.gradient2}
-                  onChange={(e) => setPreviewColors(prev => ({ ...prev, gradient2: e.target.value }))}
-                  className={`w-full h-10 rounded-lg cursor-pointer ${themeColors.buttonBg} border ${themeColors.border}`}
-                />
-              </div>
-              <div>
-                <label className={`block text-xs ${themeColors.textSecondary} mb-2`}>Solid Color</label>
-                <input
-                  type="color"
-                  value={previewColors.solid}
-                  onChange={(e) => setPreviewColors(prev => ({ ...prev, solid: e.target.value }))}
-                  className={`w-full h-10 rounded-lg cursor-pointer ${themeColors.buttonBg} border ${themeColors.border}`}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Custom Image Upload */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Custom Images</h2>
-            
-            <div className="space-y-3">
-              <label className="block">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-                <div className={`px-4 py-2.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2`}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  Upload Image
-                </div>
-              </label>
-              <p className={`text-xs ${themeColors.textSecondary} text-center`}>Upload custom images for preview</p>
-            </div>
-          </div>
-
-          {/* Zoom & Pan Controls */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Zoom & Pan</h2>
-            
-            <div className="space-y-3">
-              <div>
-                <label className={`block text-xs ${themeColors.textSecondary} mb-2`}>Zoom: {(zoom * 100).toFixed(0)}%</label>
-                <div className="flex gap-2 items-center">
-                  <button
-                    onClick={zoomOut}
-                    disabled={zoom <= 0.5}
-                    className={`px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} disabled:opacity-40 disabled:cursor-not-allowed border ${themeColors.border} rounded-lg text-xs font-semibold transition-all`}
-                  >
-                    −
-                  </button>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="4"
-                    step="0.25"
-                    value={zoom}
-                    onChange={(e) => setZoom(parseFloat(e.target.value))}
-                    className="flex-1 h-1.5 bg-[#252a36] rounded-full appearance-none cursor-pointer accent-blue-500"
-                  />
-                  <button
-                    onClick={zoomIn}
-                    disabled={zoom >= 4}
-                    className={`px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} disabled:opacity-40 disabled:cursor-not-allowed border ${themeColors.border} rounded-lg text-xs font-semibold transition-all`}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-              
-              <button
-                onClick={resetZoom}
-                className={`w-full px-4 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-semibold transition-all`}
-              >
-                Reset View
-              </button>
-            </div>
-          </div>
-
-          {/* Snapping Options */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Snapping</h2>
-            
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 text-xs cursor-pointer group">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={snapToGrid}
-                    onChange={(e) => setSnapToGrid(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className={`w-9 h-5 ${themeColors.buttonBg} rounded-full peer-checked:bg-blue-600 transition-all duration-200`}></div>
-                  <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 peer-checked:translate-x-4"></div>
-                </div>
-                <span className={`${themeColors.text} group-hover:text-white transition-colors`}>Snap to Grid</span>
-              </label>
-              
-              <label className="flex items-center gap-3 text-xs cursor-pointer group">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={snapToPoints}
-                    onChange={(e) => setSnapToPoints(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className={`w-9 h-5 ${themeColors.buttonBg} rounded-full peer-checked:bg-blue-600 transition-all duration-200`}></div>
-                  <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 peer-checked:translate-x-4"></div>
-                </div>
-                <span className={`${themeColors.text} group-hover:text-white transition-colors`}>Snap to Points</span>
-              </label>
-              
-              <label className="flex items-center gap-3 text-xs cursor-pointer group">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={snapToCenter}
-                    onChange={(e) => setSnapToCenter(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className={`w-9 h-5 ${themeColors.buttonBg} rounded-full peer-checked:bg-blue-600 transition-all duration-200`}></div>
-                  <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 peer-checked:translate-x-4"></div>
-                </div>
-                <span className={`${themeColors.text} group-hover:text-white transition-colors`}>Snap to Center</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Code Format Options */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Code Format</h2>
-            
-            <div className="space-y-2">
-              <button
-                onClick={() => setCodeFormat('svg')}
-                className={`w-full px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  codeFormat === 'svg' 
-                    ? 'bg-blue-600 text-white' 
-                    : `${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border}`
-                }`}
-              >
-                SVG Clip-Path
-              </button>
-              <button
-                onClick={() => setCodeFormat('css')}
-                className={`w-full px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  codeFormat === 'css' 
-                    ? 'bg-blue-600 text-white' 
-                    : `${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border}`
-                }`}
-              >
-                CSS Polygon
-              </button>
-              <button
-                onClick={() => setCodeFormat('react')}
-                className={`w-full px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  codeFormat === 'react' 
-                    ? 'bg-blue-600 text-white' 
-                    : `${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border}`
-                }`}
-              >
-                React Component
-              </button>
-            </div>
-          </div>
-
-          {/* Share Link */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Share</h2>
-            
-            <div className="space-y-2">
-              <button
-                onClick={generateShareLink}
-                className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-500 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
-                {copied ? '✓ Link Copied!' : 'Copy Share Link'}
-              </button>
-
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={shareOnTwitter}
-                  className="px-3 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1"
-                  title="Share on Twitter"
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                  </svg>
-                  <span className="hidden sm:inline">Twitter</span>
-                </button>
-                <button
-                  onClick={shareOnLinkedIn}
-                  className="px-3 py-2 bg-[#0077B5] hover:bg-[#006399] rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1"
-                  title="Share on LinkedIn"
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                  </svg>
-                  <span className="hidden sm:inline">LinkedIn</span>
-                </button>
-                <button
-                  onClick={shareOnFacebook}
-                  className="px-3 py-2 bg-[#1877F2] hover:bg-[#166fe5] rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1"
-                  title="Share on Facebook"
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                  <span className="hidden sm:inline">Facebook</span>
-                </button>
-              </div>
-            </div>
-            <p className={`text-xs ${themeColors.textSecondary} text-center mt-2`}>Share your design with others</p>
-          </div>
-
-          {/* Canvas Settings */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Canvas Size</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className={`block text-xs ${themeColors.textSecondary} mb-2`}>Aspect Ratio</label>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {Object.keys(ASPECT_RATIOS).map((key) => (
-                    <button
-                      key={key}
-                      onClick={() => setAspectRatio(key)}
-                      className={`px-1.5 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                        aspectRatio === key 
-                          ? 'bg-blue-600 text-white' 
-                          : `${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border}`
-                      }`}
-                    >
-                      {key}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <label htmlFor="canvas-height" className={`block text-xs ${themeColors.textSecondary} mb-2`}>Height: <span className={themeColors.text}>{canvasHeight}px</span></label>
-                <input
-                  id="canvas-height"
-                  type="range"
-                  min="300"
-                  max="800"
-                  step="50"
-                  value={canvasHeight}
-                  onChange={(e) => setCanvasHeight(parseInt(e.target.value))}
-                  className="w-full h-1.5 bg-[#252a36] rounded-full appearance-none cursor-pointer accent-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  aria-label="Canvas height in pixels"
-                />
-              </div>
-              
-              <button
-                onClick={toggleFullscreen}
-                className="w-full px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                aria-label={isFullscreen ? 'Exit fullscreen mode' : 'Enter fullscreen mode'}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-                {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-              </button>
-            </div>
-          </div>
-
-          {/* Grid Settings */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Grid Settings</h2>
-            
-            <div className="space-y-4">
-              <label className="flex items-center gap-3 text-xs cursor-pointer group">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={snapToGrid}
-                    onChange={(e) => setSnapToGrid(e.target.checked)}
-                    className="sr-only peer"
-                    aria-label="Snap to grid"
-                  />
-                  <div className={`w-9 h-5 ${themeColors.buttonBg} rounded-full peer-checked:bg-blue-600 transition-all duration-200`}></div>
-                  <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 peer-checked:translate-x-4"></div>
-                </div>
-                <span className={`${themeColors.text} group-hover:text-white transition-colors`}>Snap to Grid</span>
-              </label>
-              
-              <label className="flex items-center gap-3 text-xs cursor-pointer group">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={showGridPoints}
-                    onChange={(e) => setShowGridPoints(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className={`w-9 h-5 ${themeColors.buttonBg} rounded-full peer-checked:bg-blue-600 transition-all duration-200`}></div>
-                  <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 peer-checked:translate-x-4"></div>
-                </div>
-                <span className={`${themeColors.text} group-hover:text-white transition-colors`}>Show Grid Points</span>
-              </label>
-              
-              <div>
-                <label className={`block text-xs ${themeColors.textSecondary} mb-2`}>Grid Divisions: <span className={themeColors.text}>{gridSize}×{gridSize}</span></label>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setGridSize(prev => Math.max(MIN_GRID, prev - 5))}
-                    className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-bold transition-all`}
-                  >
-                    −5
-                  </button>
-                  <button
-                    onClick={() => setGridSize(prev => Math.max(MIN_GRID, prev - 1))}
-                    className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-bold transition-all`}
-                  >
-                    −
-                  </button>
-                  <input
-                    type="range"
-                    min={MIN_GRID}
-                    max={MAX_GRID}
-                    value={gridSize}
-                    onChange={(e) => setGridSize(parseInt(e.target.value))}
-                    className="flex-1 h-1.5 bg-[#252a36] rounded-full appearance-none cursor-pointer accent-blue-500"
-                  />
-                  <button
-                    onClick={() => setGridSize(prev => Math.min(MAX_GRID, prev + 1))}
-                    className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-bold transition-all`}
-                  >
-                    +
-                  </button>
-                  <button
-                    onClick={() => setGridSize(prev => Math.min(MAX_GRID, prev + 5))}
-                    className={`px-2 py-1.5 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-bold transition-all`}
-                  >
-                    +5
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Add Points Mode */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Point Tools</h2>
-            
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setAddMode(!addMode)
-                  if (!addMode) {
-                    setInsertAfterPoint(points[points.length - 1]?.id || null)
-                  }
-                }}
-                className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                  addMode 
-                    ? 'bg-emerald-600 text-white' 
-                    : `${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border}`
-                }`}
-              >
-                {addMode ? '✓ Add Mode ON' : '+ Enable Add Mode'}
-              </button>
-              
-              {addMode && (
-                <>
-                  <div className={`text-xs ${themeColors.textSecondary} mb-2`}>Insert Mode:</div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setInsertMode('smart')}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                        insertMode === 'smart' 
-                          ? 'bg-emerald-600 text-white' 
-                          : `${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border}`
-                      }`}
-                    >
-                      🎯 Smart Edge
-                    </button>
-                    <button
-                      onClick={() => setInsertMode('after')}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                        insertMode === 'after' 
-                          ? 'bg-emerald-600 text-white' 
-                          : `${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border}`
-                      }`}
-                    >
-                      ➡️ After Point
-                    </button>
-                  </div>
-                  
-                  <div className="text-xs bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20">
-                    {insertMode === 'smart' ? (
-                      <>
-                        <p className="font-semibold text-emerald-400 mb-1">Smart Edge Mode</p>
-                        <p className="text-emerald-300/80">Click anywhere - point will be inserted on the nearest edge of the shape automatically!</p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="font-semibold text-emerald-400 mb-1">After Point Mode</p>
-                        <p className="text-emerald-300/80">Click a point first, then click canvas to insert after it.</p>
-                      </>
-                    )}
-                  </div>
-                </>
-              )}
-              
-              <button
-                onClick={deletePoint}
-                disabled={!selectedPoint || points.length <= 3}
-                className={`w-full px-4 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-xs font-semibold transition-all duration-200`}
-              >
-                Delete Selected Point
-              </button>
-
-              {selectedPoint && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => movePointOrder('up')}
-                    className={`flex-1 px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-medium transition-all`}
-                  >
-                    ↑ Move Up
-                  </button>
-                  <button
-                    onClick={() => movePointOrder('down')}
-                    className={`flex-1 px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-medium transition-all`}
-                  >
-                    ↓ Move Down
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Corner Rounding */}
-          <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>Corner Rounding</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className={`block text-xs ${themeColors.textSecondary} mb-2`}>
-                  Global Radius: <span className="text-amber-400 font-medium">{(globalRadius * 100).toFixed(0)}%</span>
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="0.3"
-                  step="0.005"
-                  value={globalRadius}
-                  onChange={(e) => setGlobalRadius(parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-[#252a36] rounded-full appearance-none cursor-pointer accent-amber-500"
-                />
-              </div>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={applyGlobalRadius}
-                  className="flex-1 px-3 py-2 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-semibold transition-all duration-200"
-                >
-                  Apply to All
-                </button>
-                <button
-                  onClick={resetAllRadii}
-                  className={`flex-1 px-3 py-2 ${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border} rounded-lg text-xs font-medium transition-all`}
-                >
-                  Reset All
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Selected Point Properties */}
-          {selectedPointData && (
-            <div className="mb-5 p-4 bg-[#1a2332] rounded-xl border border-blue-500/30">
-              <h2 className="text-xs font-semibold mb-3 text-blue-400 uppercase tracking-wider">
-                Point #{points.findIndex(p => p.id === selectedPoint) + 1}
-              </h2>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={`block text-xs ${themeColors.textSecondary} mb-1.5`}>X Position</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={selectedPointData.x.toFixed(2)}
-                      onChange={(e) => updatePoint('x', Math.max(0, Math.min(1, parseFloat(e.target.value) || 0)))}
-                      className={`w-full px-3 py-2 ${themeColors.inputBg} rounded-lg text-xs border ${themeColors.border} focus:border-blue-500 focus:outline-none transition-all`}
-                    />
-                  </div>
-                  <div>
-                    <label className={`block text-xs ${themeColors.textSecondary} mb-1.5`}>Y Position</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={selectedPointData.y.toFixed(2)}
-                      onChange={(e) => updatePoint('y', Math.max(0, Math.min(1, parseFloat(e.target.value) || 0)))}
-                      className={`w-full px-3 py-2 ${themeColors.inputBg} rounded-lg text-xs border ${themeColors.border} focus:border-blue-500 focus:outline-none transition-all`}
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className={`block text-xs ${themeColors.textSecondary} mb-2`}>
-                    Point Radius: <span className="text-purple-400 font-medium">{(selectedPointData.radius * 100).toFixed(0)}%</span>
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="0.3"
-                    step="0.005"
-                    value={selectedPointData.radius}
-                    onChange={(e) => updatePoint('radius', parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-[#252a36] rounded-full appearance-none cursor-pointer accent-purple-500"
-                  />
-                </div>
-                
-                <button
-                  onClick={togglePointType}
-                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                    selectedPointData.type === 'smooth'
-                      ? 'bg-purple-600 text-white'
-                      : `${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border}`
-                  }`}
-                >
-                  Type: {selectedPointData.type === 'smooth' ? '● Smooth' : '■ Corner'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {!selectedPointData && !addMode && (
-            <div className={`mb-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-              <p className={`text-xs ${themeColors.textSecondary} text-center`}>
-                Click a point to select and edit it
-              </p>
-            </div>
-          )}
-
-          {/* ClipPath ID */}
-          <div className="mb-5">
-            <label htmlFor="clippath-id" className={`block text-xs ${themeColors.textSecondary} mb-2`}>ClipPath ID</label>
-            <input
-              id="clippath-id"
-              type="text"
-              value={clipPathId}
-              onChange={(e) => setClipPathId(e.target.value.replace(/\s/g, ''))}
-              className={`w-full px-4 py-2.5 ${themeColors.inputBg} rounded-xl text-sm border ${themeColors.border} focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all`}
-              placeholder="customClip"
-              aria-label="ClipPath ID for SVG element"
-            />
-          </div>
-
-          {/* Copy Button */}
-          <button
-            onClick={copyCode}
-            className={`w-full px-5 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              copied 
-                ? 'bg-emerald-600' 
-                : 'bg-blue-600 hover:bg-blue-500'
-            }`}
-            aria-label={copied ? 'SVG code copied to clipboard' : 'Copy SVG code to clipboard'}
-          >
-            {copied ? '✓ Copied to Clipboard!' : 'Copy SVG Code'}
-          </button>
-
-          {/* Keyboard Shortcuts */}
-          <div className={`mt-5 p-4 ${themeColors.sidebarSection} rounded-xl border ${themeColors.border}`}>
-            <h2 className={`text-xs font-semibold mb-3 ${themeColors.textSecondary} uppercase tracking-wider`}>⌨️ Shortcuts</h2>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-              <div className="flex justify-between items-center">
-                <span className={themeColors.textSecondary}>Undo</span>
-                <kbd className={`${themeColors.buttonBg} px-2 py-0.5 rounded-md ${themeColors.text} font-mono text-[10px]`}>Ctrl+Z</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className={themeColors.textSecondary}>Redo</span>
-                <kbd className={`${themeColors.buttonBg} px-2 py-0.5 rounded-md ${themeColors.text} font-mono text-[10px]`}>Ctrl+Y</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className={themeColors.textSecondary}>Add Mode</span>
-                <kbd className={`${themeColors.buttonBg} px-2 py-0.5 rounded-md ${themeColors.text} font-mono text-[10px]`}>A</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className={themeColors.textSecondary}>Snap Grid</span>
-                <kbd className={`${themeColors.buttonBg} px-2 py-0.5 rounded-md ${themeColors.text} font-mono text-[10px]`}>S</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className={themeColors.textSecondary}>Show Grid</span>
-                <kbd className={`${themeColors.buttonBg} px-2 py-0.5 rounded-md ${themeColors.text} font-mono text-[10px]`}>G</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className={themeColors.textSecondary}>Toggle Type</span>
-                <kbd className={`${themeColors.buttonBg} px-2 py-0.5 rounded-md ${themeColors.text} font-mono text-[10px]`}>T</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className={themeColors.textSecondary}>Delete Point</span>
-                <kbd className={`${themeColors.buttonBg} px-2 py-0.5 rounded-md ${themeColors.text} font-mono text-[10px]`}>Del</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className={themeColors.textSecondary}>Deselect</span>
-                <kbd className={`${themeColors.buttonBg} px-2 py-0.5 rounded-md ${themeColors.text} font-mono text-[10px]`}>Esc</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className={themeColors.textSecondary}>Next Point</span>
-                <kbd className={`${themeColors.buttonBg} px-2 py-0.5 rounded-md ${themeColors.text} font-mono text-[10px]`}>Tab</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Prev Point</span>
-                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">⇧Tab</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Move Point</span>
-                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">↑↓←→</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Reorder</span>
-                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Ctrl+↑↓</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Grid +/-</span>
-                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">+ -</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Fullscreen</span>
-                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">F</kbd>
-              </div>
-              <div className="flex justify-between items-center col-span-2">
-                <span className="text-slate-500">Copy Code</span>
-                <kbd className="bg-[#252a36] px-2 py-0.5 rounded-md text-slate-300 font-mono text-[10px]">Ctrl+C</kbd>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        {/* Main Canvas */}
-        <section className={`flex-1 p-4 sm:p-6 lg:p-8 overflow-auto ${themeColors.mainBg} ${isFullscreen ? 'p-4!' : ''}`} aria-label="Main Editor Canvas">
-          <div className={`mx-auto ${isFullscreen ? 'max-w-full h-full' : 'max-w-5xl'}`}>
-            {/* Canvas Container */}
-            <div 
-              ref={canvasContainerRef}
-              className={`${themeColors.cardBg} rounded-2xl p-3 sm:p-5 mb-6 sm:mb-8 border ${themeColors.border} ${isFullscreen ? 'h-full flex flex-col' : ''}`}
-            >
-              <div className="flex justify-between items-center mb-3 sm:mb-4 flex-wrap gap-2">
-                <h2 className={`text-sm font-semibold ${themeColors.text}`}>
-                  Editor Canvas 
-                  <span className={`ml-2 ${themeColors.textSecondary} font-normal`}>({aspectRatio})</span>
-                </h2>
-                <div className="flex gap-5 text-xs">
-                  <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                    <span className={themeColors.textSecondary}>Corner</span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-purple-500"></span>
-                    <span className={themeColors.textSecondary}>Smooth</span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                    <span className="text-slate-400">Selected</span>
-                  </span>
-                  {addMode && insertMode === 'after' && (
-                    <span className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
-                      <span className="text-slate-400">Insert After</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              <div 
-                className={`relative bg-[#0a0b0f] rounded-xl overflow-hidden border-2 border-[#252a36] mx-auto ${isFullscreen ? 'flex-1' : ''}`}
-                style={{ 
-                  aspectRatio: `${ar.width}/${ar.height}`,
-                  maxHeight: isFullscreen ? 'calc(100vh - 120px)' : `${canvasHeight}px`,
-                  width: isFullscreen ? 'auto' : '100%',
-                  maxWidth: '100%'
-                }}
-              >
-                <svg
-                  ref={svgRef}
-                  viewBox="0 0 1 1"
-                  className={`w-full h-full ${addMode ? 'cursor-crosshair' : 'cursor-default'}`}
-                  preserveAspectRatio="xMidYMid meet"
-                  onClick={handleCanvasClick}
-                  role="application"
-                  aria-label="SVGCanvas editor canvas. Use arrow keys to move selected point, Tab to select next point."
-                >
-                  {/* Background */}
-                  <rect width="1" height="1" fill="#0a0a0f" />
-                  
-                  {/* Grid lines */}
-                  {Array.from({ length: gridSize + 1 }).map((_, i) => (
-                    <g key={`grid-${i}`}>
-                      <line
-                        x1={i / gridSize}
-                        y1="0"
-                        x2={i / gridSize}
-                        y2="1"
-                        stroke={i % 5 === 0 ? '#2d3748' : '#1a202c'}
-                        strokeWidth={i % 5 === 0 ? '0.003' : '0.001'}
-                      />
-                      <line
-                        x1="0"
-                        y1={i / gridSize}
-                        x2="1"
-                        y2={i / gridSize}
-                        stroke={i % 5 === 0 ? '#2d3748' : '#1a202c'}
-                        strokeWidth={i % 5 === 0 ? '0.003' : '0.001'}
-                      />
-                    </g>
-                  ))}
-                  
-                  {/* Center lines */}
-                  <line x1="0.5" y1="0" x2="0.5" y2="1" stroke="#3b82f6" strokeWidth="0.002" opacity="0.3" />
-                  <line x1="0" y1="0.5" x2="1" y2="0.5" stroke="#3b82f6" strokeWidth="0.002" opacity="0.3" />
-                  
-                  {/* Grid intersection points */}
-                  {showGridPoints && gridPoints.map((gp, idx) => (
-                    <circle
-                      key={`gp-${idx}`}
-                      cx={gp.x}
-                      cy={gp.y}
-                      r={gp.isMajor ? '0.012' : gp.isEdge ? '0.008' : '0.006'}
-                      fill={gp.isMajor ? '#4a5568' : '#2d3748'}
-                      className={addMode ? 'cursor-pointer hover:fill-green-400 transition-colors duration-150' : ''}
-                      style={{ pointerEvents: addMode ? 'auto' : 'none' }}
-                      onClick={(e) => {
-                        if (addMode) {
-                          e.stopPropagation()
-                          handleAddPoint(gp.x, gp.y)
-                        }
-                      }}
-                    />
-                  ))}
-                  
-                  {/* Shape fill */}
-                  <path
-                    d={pathD}
-                    fill="rgba(59, 130, 246, 0.15)"
-                    stroke="none"
-                  />
-                  
-                  {/* Shape outline */}
-                  <path
-                    d={pathD}
-                    fill="none"
-                    stroke="#3b82f6"
-                    strokeWidth="0.005"
-                  />
-                  
-                  {/* Edge highlight when in smart add mode */}
-                  {addMode && insertMode === 'smart' && (
-                    points.map((point, index) => {
-                      const nextPoint = points[(index + 1) % points.length]
-                      return (
-                        <line
-                          key={`edge-${index}`}
-                          x1={point.x}
-                          y1={point.y}
-                          x2={nextPoint.x}
-                          y2={nextPoint.y}
-                          stroke="#22c55e"
-                          strokeWidth="0.008"
-                          opacity="0.4"
-                          strokeLinecap="round"
-                        />
-                      )
-                    })
-                  )}
-                  
-                  {/* Connection lines between points (dashed) */}
-                  {points.map((point, index) => {
-                    const nextPoint = points[(index + 1) % points.length]
-                    return (
-                      <line
-                        key={`conn-${index}`}
-                        x1={point.x}
-                        y1={point.y}
-                        x2={nextPoint.x}
-                        y2={nextPoint.y}
-                        stroke="#60a5fa"
-                        strokeWidth="0.002"
-                        strokeDasharray="0.01 0.006"
-                        opacity="0.5"
-                      />
-                    )
-                  })}
-                  
-                  {/* Points */}
-                  {points.map((point, index) => {
-                    const isSelected = selectedPoint === point.id
-                    const isInsertPoint = insertAfterPoint === point.id && insertMode === 'after'
-                    const radius = point.radius + globalRadius
-                    
-                    return (
-                      <g key={point.id}>
-                        {/* Radius indicator circle */}
-                        {radius > 0 && (
-                          <circle
-                            cx={point.x}
-                            cy={point.y}
-                            r={Math.min(radius, 0.15)}
-                            fill="none"
-                            stroke="#f59e0b"
-                            strokeWidth="0.002"
-                            strokeDasharray="0.008 0.004"
-                            opacity="0.6"
-                          />
-                        )}
-                        
-                        {/* Point number badge */}
-                        <g transform={`translate(${point.x + 0.025}, ${point.y - 0.03})`}>
-                          <rect
-                            x="-0.012"
-                            y="-0.016"
-                            width="0.024"
-                            height="0.022"
-                            rx="0.004"
-                            fill="#1f2937"
-                            stroke="#4b5563"
-                            strokeWidth="0.001"
-                          />
-                          <text
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            fill="#9ca3af"
-                            fontSize="0.022"
-                            fontFamily="system-ui"
-                            y="0.002"
-                          >
-                            {index + 1}
-                          </text>
-                        </g>
-                        
-                        {/* Point outer glow for selected */}
-                        {isSelected && (
-                          <circle
-                            cx={point.x}
-                            cy={point.y}
-                            r="0.035"
-                            fill="none"
-                            stroke="#3b82f6"
-                            strokeWidth="0.004"
-                            opacity="0.5"
-                          />
-                        )}
-                        
-                        {/* Insert indicator */}
-                        {addMode && isInsertPoint && (
-                          <circle
-                            cx={point.x}
-                            cy={point.y}
-                            r="0.04"
-                            fill="none"
-                            stroke="#22c55e"
-                            strokeWidth="0.003"
-                            strokeDasharray="0.008 0.004"
-                          />
-                        )}
-                        
-                        {/* Main point handle */}
-                        <circle
-                          cx={point.x}
-                          cy={point.y}
-                          r="0.022"
-                          fill={
-                            isSelected 
-                              ? '#3b82f6' 
-                              : point.type === 'smooth' 
-                                ? '#a855f7' 
-                                : '#ef4444'
-                          }
-                          stroke="#fff"
-                          strokeWidth="0.004"
-                          className="cursor-move transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                          onMouseDown={(e) => handlePointMouseDown(e, point.id)}
-                          onTouchStart={(e) => handlePointTouchStart(e, point.id)}
-                          tabIndex={0}
-                          role="button"
-                          aria-label={`Point ${index + 1}: ${point.type === 'smooth' ? 'Smooth' : 'Corner'} point at position ${point.x.toFixed(2)}, ${point.y.toFixed(2)}`}
-                        />
-                        
-                        {/* Corner/Smooth indicator inside point */}
-                        {point.type === 'smooth' ? (
-                          <circle
-                            cx={point.x}
-                            cy={point.y}
-                            r="0.008"
-                            fill="#fff"
-                            pointerEvents="none"
-                          />
-                        ) : (
-                          <rect
-                            x={point.x - 0.006}
-                            y={point.y - 0.006}
-                            width="0.012"
-                            height="0.012"
-                            fill="#fff"
-                            pointerEvents="none"
-                          />
-                        )}
-                      </g>
-                    )
-                  })}
-                </svg>
-              </div>
-              
-              {/* Coordinate labels */}
-              <div className="mt-3 flex justify-between text-xs text-slate-600 px-1">
-                <span className="font-mono">0,0</span>
-                <span className="text-slate-500">
-                  {gridSize}×{gridSize} grid {snapToGrid && '• Snap ON'}
-                  {addMode && ` • ${insertMode === 'smart' ? 'Smart Edge' : 'After Point'} mode`}
-                </span>
-                <span className="font-mono">1,1</span>
-              </div>
-            </div>
-
-            {/* Preview Section */}
-            {!isFullscreen && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-8">
-                  {/* Live Preview */}
-                  <div className={`${themeColors.cardBg} rounded-2xl p-4 sm:p-5 border ${themeColors.border}`}>
-                    <h2 className={`text-sm font-semibold mb-4 ${themeColors.text}`}>Live Preview</h2>
-                    
-                    <svg width="0" height="0">
-                      <defs>
-                        <clipPath id="livePreview" clipPathUnits="objectBoundingBox">
-                          <path d={pathD} />
-                        </clipPath>
-                      </defs>
-                    </svg>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className={`text-xs ${themeColors.textSecondary} mb-2`}>Gradient</p>
-                        <div
-                          className="aspect-square rounded-xl"
-                          style={{ 
-                            clipPath: 'url(#livePreview)',
-                            background: `linear-gradient(135deg, ${previewColors.gradient1} 0%, ${previewColors.gradient2} 100%)`
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <p className={`text-xs ${themeColors.textSecondary} mb-2`}>Solid</p>
-                        <div
-                          className="aspect-square rounded-xl"
-                          style={{ 
-                            clipPath: 'url(#livePreview)',
-                            backgroundColor: previewColors.solid
-                          }}
-                        />
-                      </div>
-                      {customImages.map((img, idx) => (
-                        <div key={idx}>
-                          <p className={`text-xs ${themeColors.textSecondary} mb-2`}>Image {idx + 1}</p>
-                          <div
-                            className="aspect-square bg-cover bg-center rounded-xl"
-                            style={{ 
-                              clipPath: 'url(#livePreview)',
-                              backgroundImage: `url(${img})`
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Code Output */}
-                  <div className={`${themeColors.cardBg} rounded-2xl p-4 sm:p-5 border ${themeColors.border}`}>
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className={`text-sm font-semibold ${themeColors.text}`}>Generated Code ({codeFormat.toUpperCase()})</h2>
-                      <button
-                        onClick={copyCode}
-                        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                          copied 
-                            ? 'bg-emerald-600' 
-                            : `${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border}`
-                        }`}
-                      >
-                        {copied ? '✓ Copied' : 'Copy'}
-                      </button>
-                    </div>
-                    <pre className={`${themeColors.inputBg} rounded-xl p-4 overflow-auto text-xs max-h-80 border ${themeColors.border}`}>
-                      <code className="text-emerald-400 whitespace-pre-wrap break-all font-mono">
-                        {generateCodeInFormat()}
-                      </code>
-                    </pre>
-                  </div>
-                </div>
-
-                {/* Animation Preview */}
-                <div className={`${themeColors.cardBg} rounded-2xl p-4 sm:p-5 border ${themeColors.border} mb-6 sm:mb-8`}>
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className={`text-sm font-semibold ${themeColors.text}`}>Animation Preview</h2>
-                    <button
-                      onClick={() => setShowAnimation(!showAnimation)}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                        showAnimation 
-                          ? 'bg-purple-600 text-white' 
-                          : `${themeColors.buttonBg} ${themeColors.buttonHover} border ${themeColors.border}`
-                      }`}
-                    >
-                      {showAnimation ? '⏸ Pause' : '▶ Play'}
-                    </button>
-                  </div>
-                  
-                  <svg width="0" height="0">
-                    <defs>
-                      <clipPath id="animPreview" clipPathUnits="objectBoundingBox">
-                        <path d={pathD} />
-                      </clipPath>
-                    </defs>
-                  </svg>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <p className={`text-xs ${themeColors.textSecondary} mb-2 text-center`}>Scale</p>
-                      <div
-                        className={`aspect-square rounded-xl ${showAnimation ? 'animate-pulse' : ''}`}
-                        style={{ 
-                          clipPath: 'url(#animPreview)',
-                          background: `linear-gradient(135deg, #f093fb 0%, #f5576c 100%)`,
-                          animation: showAnimation ? 'scale-anim 2s ease-in-out infinite' : 'none'
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <p className={`text-xs ${themeColors.textSecondary} mb-2 text-center`}>Rotate</p>
-                      <div
-                        className="aspect-square rounded-xl"
-                        style={{ 
-                          clipPath: 'url(#animPreview)',
-                          background: `linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)`,
-                          animation: showAnimation ? 'rotate-anim 3s linear infinite' : 'none'
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <p className={`text-xs ${themeColors.textSecondary} mb-2 text-center`}>Fade</p>
-                      <div
-                        className="aspect-square rounded-xl"
-                        style={{ 
-                          clipPath: 'url(#animPreview)',
-                          background: `linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)`,
-                          animation: showAnimation ? 'fade-anim 2s ease-in-out infinite' : 'none'
-                        }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <style>{`
-                    @keyframes scale-anim {
-                      0%, 100% { transform: scale(1); }
-                      50% { transform: scale(1.1); }
-                    }
-                    @keyframes rotate-anim {
-                      from { transform: rotate(0deg); }
-                      to { transform: rotate(360deg); }
-                    }
-                    @keyframes fade-anim {
-                      0%, 100% { opacity: 1; }
-                      50% { opacity: 0.5; }
-                    }
-                  `}</style>
-                </div>
-
-                {/* Path Data */}
-                <div className={`${themeColors.cardBg} rounded-2xl p-4 sm:p-5 border ${themeColors.border}`}>
-                  <h2 className={`text-sm font-semibold mb-3 ${themeColors.text}`}>Raw Path Data</h2>
-                  <div className={`${themeColors.inputBg} rounded-xl p-4 overflow-x-auto border ${themeColors.border}`}>
-                    <code className="text-xs text-blue-400 break-all font-mono">{pathD}</code>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-      </div>
-    </main>
-  )
+        </main>
+      } />
+      <Route path="/community" element={<CommunityGallery themeColors={themeColors} theme={theme} />} />
+      <Route path="/privacy" element={<LegalPage type="privacy" themeColors={themeColors} />} />
+      <Route path="/terms" element={<LegalPage type="terms" themeColors={themeColors} />} />
+      <Route path="/contact" element={<LegalPage type="contact" themeColors={themeColors} />} />
+      <Route path="/about" element={<LegalPage type="about" themeColors={themeColors} />} />
+    </Routes>
+  );
 }
 
-export default App
+export default App;
